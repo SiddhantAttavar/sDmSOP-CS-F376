@@ -26,16 +26,15 @@ ll  divmod(ll  a, ll  b, ll  md) {return mulmod(a, powmod(b, md-2, md), md);} //
 const ll inf = 0xFFFFFFFFFFFFFFFL; //very large number
 const ll INF = 1e18;
 const ll MAX_LIMIT_REPEAT = 100;
-const ll MAX_TIME = 1800;
+const ll MAX_TIME = 3600;
 const ll MAX_BAD_ITERATIONS = 10000;
 const ll MAX_ITERATIONS = 100000;
 const double MU = 0.11;
 const double ALPHA = 0.99994;
-const double PHI_1 = 0.24, PHI_2 = 0.76;
+const double PHI_1 = 0.26, PHI_2 = 0.76;
 const double REMOVAL_CONSTANT = 0.3;
-const vector<double> REMOVAL_WEIGHTS = {0.19, 0.13, 0.38, 0.2, 0.09};
-const vector<double> INSERTION_WEIGHTS = {0.29, 0.36, 0.12, 0.07, 0.02, 0.04, 0.04, 0.03, 0.05};
-// const vector<double> INSERTION_WEIGHTS = {0.29, 0.36, 0.12};
+const double REWARD_BEST = 1.1, MIN_WEIGHT = 0.01, MAX_WEIGHT = 0.5;
+const double EMA_ALPHA = 0.01;
 
 ofstream outfile; 
 
@@ -71,6 +70,9 @@ vector<ll> profit;
 vector<ii> proximity;
 vector<vector<ld>> relatedness;
 unordered_map<ll, ll>mp;
+vector<double> removal_weights = {0.19, 0.13, 0.38, 0.2, 0.09};
+vector<double> insertion_weights = {0.29, 0.36, 0.12, 0.07, 0.02, 0.04, 0.04, 0.03, 0.05};
+double avg_removal_time = 1000, avg_insertion_time = 1000;
 
 string name, comment;
 ll  Tmax;
@@ -857,15 +859,17 @@ vector<vector<ll>> remove_5(vector<vector<ll>> u) {
 * In all cases we keep the new values only if they satisfy all the hard constraints.
 * We can add more neighborhoods structures later, if needed.
 */
-vector<vector<ll>> remove(vector<vector<ll>> u) {
+tuple<vector<vector<ll>>, int, ll> remove(vector<vector<ll>> u) {
     // cerr<<"Shaking the configuration....."<<endl;
     int k = r - sz(u[m]) - 1;
     if (k == 0) {
-        return u;
+        return {u, -1, 0};
     }
-    int x = getRand(4, min(40, (int) (REMOVAL_CONSTANT * k)));
+    auto start = std::chrono::high_resolution_clock::now();
+    // int x = getRand(4, min(40, (int) (REMOVAL_CONSTANT * k)));
+    int x = getRand(4, REMOVAL_CONSTANT * k);
+    int l = priority_select(removal_weights);
     while (x--) {
-        int l = priority_select(REMOVAL_WEIGHTS);
         vector<vector<ll>> u1 = u;
         switch(l) {
             case 0:
@@ -887,7 +891,9 @@ vector<vector<ll>> remove(vector<vector<ll>> u) {
         // cerr<<"Shaking the configuration done"<<endl;
         u = u1;
     }
-    return u;
+    auto end = std::chrono::high_resolution_clock::now();
+    ll time = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+    return {u, l, time};
 }
 
 pair<vector<ll>, vector<ll>> preprocess_costs(vector<vector<ll>> &u) {
@@ -1168,15 +1174,16 @@ vector<vector<ll>> insert_9(vector<vector<ll>> u) {
 * Another option can be to check all n^2 pairs for both neighborhoods.
 * We can add more neighborhoods structures later, if needed.
 */
-vector<vector<ll>> insert(vector<vector<ll>>& u, int l = -1) {
+tuple<vector<vector<ll>>, int, ll> insert(vector<vector<ll>>& u, int l = -1) {
     // cerr<<"Local search for the configuration....."<<endl;
     if (u[m].empty()) {
         vector<vector<ll>> u1 = u;
-        return u1;
+        return {u1, -1, 0};
     }
+    auto start = std::chrono::high_resolution_clock::now();
     vector<vector<ll>> u1;
     if (l == -1) {
-        l = priority_select(INSERTION_WEIGHTS);
+        l = priority_select(insertion_weights);
     }
     switch(l) {
         case 0:
@@ -1207,8 +1214,10 @@ vector<vector<ll>> insert(vector<vector<ll>>& u, int l = -1) {
             u1 = insert_9(u);
             break;
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    ll time = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
     // cerr<<"Local search for the configuration done"<<endl;
-    return u1;
+    return {u1, l, time};
 }
 
 
@@ -1233,6 +1242,20 @@ bool accept(ll p_new, ll p_prev) {
     return y < p;
 }
 
+void update_weights(vector<double> &weights, int op, double reward, ll time, double &avg_time) {
+     if (op == -1) {
+         return;
+     }
+
+     reward *= avg_time / time;
+     avg_time = (1 - EMA_ALPHA) * avg_time + EMA_ALPHA * time;
+     weights[op] = min(MAX_WEIGHT, max(MIN_WEIGHT, weights[op] * reward));
+     double sum = accumulate(weights.begin(), weights.end(), 0.0);
+     for (int i = 0; i < sz(weights); i++) {
+         weights[i] /= sum;
+     }
+}
+
 
 /*
 * MTSP VNS Alogorithm
@@ -1249,7 +1272,7 @@ vector<vector<ll>> mtsp_lns(ll  stoppingTime) {
     for (int i = 1; i < r; i++) {
         u[m].push_back(i);
     }
-    u = insert(u, 1);
+    u = get<0>(insert(u, 1));
     if(tourInvalid(u)) {
         u.clear();
         return u;
@@ -1274,9 +1297,10 @@ vector<vector<ll>> mtsp_lns(ll  stoppingTime) {
 
     while (true) {
         // cout << "Here" << endl;
-        vector<vector<ll>> u1 = remove(u);
-        vector<vector<ll>> u11 = insert(u1);
+        auto [u1, removal_operator, removal_time] = remove(u);
+        auto [u11, insertion_operator, insertion_time] = insert(u1);
         ll p_new = P(u11);
+        double adaptive_reward = p_new / (1.0 * p_current);
         if(!tourInvalid(u11) && no_salesmen_empty(u11) && u != u11 && accept(p_new, p_current)) {
             if (p_new > p_max) {
                 cout << "Improved profit from " << p_max << " to " << p_new << endl;
@@ -1284,6 +1308,7 @@ vector<vector<ll>> mtsp_lns(ll  stoppingTime) {
                 u_best = u11;
                 effective_iterations++;
                 consecutive_bad_iterations = 0;
+                adaptive_reward *= REWARD_BEST;
             }
             else {
                 consecutive_bad_iterations++;
@@ -1296,9 +1321,14 @@ vector<vector<ll>> mtsp_lns(ll  stoppingTime) {
             consecutive_bad_iterations++;
         }
 
+        update_weights(removal_weights, removal_operator, adaptive_reward, removal_time, avg_removal_time);
+        update_weights(insertion_weights, insertion_operator, adaptive_reward, insertion_time, avg_insertion_time);
+
         temperature *= ALPHA;
         iterations++;
         if (iterations % 1000 == 0) {
+            // cout << removal_operator << ' ' << avg_removal_time / removal_time << ' ' << avg_removal_time << endl;
+            // cout << insertion_operator << ' ' << avg_insertion_time / insertion_time << ' ' << avg_insertion_time << endl;
             cout << "Effective iterations: " << effective_iterations << '/' << iterations << endl;
         }
         auto end = std::chrono::high_resolution_clock::now();
@@ -1306,6 +1336,18 @@ vector<vector<ll>> mtsp_lns(ll  stoppingTime) {
         if((diff > std::chrono::nanoseconds(stoppingTime*((ll)1e9))) || p_current == total_profit || (consecutive_bad_iterations > MAX_BAD_ITERATIONS) || (iterations > MAX_ITERATIONS))
             break;
     }
+
+    cout << "Removal weights: ";
+    for (double i : removal_weights) {
+        cout << std::fixed << setprecision(2) << i << ' ';
+    }
+    cout << endl;
+    cout << "Insertion weights: ";
+    for (double i : insertion_weights) {
+        cout << std::fixed << setprecision(2) << i << ' ';
+    }
+    cout << endl;
+
     auto end = std::chrono::high_resolution_clock::now();
     outfile<<std::fixed<<chrono::duration_cast<chrono::nanoseconds>(end - start).count()/(ld)(1e9)<<endl;
     outfile<<effective_iterations<<endl;

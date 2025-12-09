@@ -3,7 +3,7 @@ from glob import glob
 from csv import writer
 
 ITERATION_COUNT = 1
-code = 'sDmSOP_LNS_STOP_new.cpp'
+code = 'sDmSOP-CS-F376/sDmSOP_LNS_STOP_new.cpp'
 executable = './sdmi_STOP.out'
 compile = f'g++ {code} -o {executable}'
 os.system(compile)
@@ -33,6 +33,12 @@ for instance in instances:
 	if 'T20' in instance_name or 'T100' in instance_name:
 		continue
 
+	if 'T40_p1' not in instance_name or 'RND' in instance_name or vehicles != 'stop_1veh':
+		continue
+
+	# if instance_name != '217vm1084_T40_p1' or vehicles != 'stop_1veh':
+	# 	continue
+
 	m = 0
 	t_max = 0
 	avg_time = 0
@@ -47,7 +53,7 @@ for instance in instances:
 
 		out_file = f'{results}/{instance_name}_{vehicles}.txt'
 		run = f'{executable} {instance} {out_file}'
-		# os.system(run)
+		os.system(run)
 
 		with open(out_file, 'r') as file:
 			lines = [s[:-1] for s in file.readlines()]
