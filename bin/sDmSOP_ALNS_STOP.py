@@ -51,8 +51,7 @@ def process_instance(instance):
 
 		out_file = f'{results}/{instance_name}_{vehicles}.txt'
 		run = f'{executable} {instance} {out_file}'
-		if instance_name == '201pr1002_T80_p1':
-			os.system(run)
+		os.system(run)
 
 		with open(out_file, 'r') as file:
 			lines = [s[:-1] for s in file.readlines()]

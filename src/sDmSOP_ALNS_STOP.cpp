@@ -866,8 +866,8 @@ tuple<vector<vector<ll>>, int, ll> remove(vector<vector<ll>> u) {
         return {u, -1, 0};
     }
     auto start = std::chrono::high_resolution_clock::now();
-    // int x = getRand(4, min(40, (int) (REMOVAL_CONSTANT * k)));
-    int x = getRand(4, REMOVAL_CONSTANT * k);
+    int x = getRand(4, min(40, (int) (REMOVAL_CONSTANT * k)));
+    // int x = getRand(4, REMOVAL_CONSTANT * k);
     int l = priority_select(removal_weights);
     while (x--) {
         vector<vector<ll>> u1 = u;
