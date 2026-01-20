@@ -27,7 +27,7 @@ const ll inf = 0xFFFFFFFFFFFFFFFL; //very large number
 const ll INF = 1e18;
 const ll MAX_LIMIT_REPEAT = 100;
 const ll MAX_TIME = 3600;
-const ll MAX_BAD_ITERATIONS = 10000;
+const ll MAX_BAD_ITERATIONS = 50000;
 const ll MAX_ITERATIONS = 100000;
 const double MU = 0.11;
 const double ALPHA = 0.99994;
@@ -1263,15 +1263,15 @@ void update_weights(vector<double> &weights, int op, double reward, ll time, dou
 vector<vector<ll>> mtsp_lns(ll  stoppingTime) {
     vector<vector<ll>> u_historical; 
     // vector<vector<ll>> u = construct_alternate_initial_solution();
-    // vector<vector<ll>> u = construct_initial_solution();
+    vector<vector<ll>> u = construct_initial_solution();
     // if(tourInvalid(u)) {
     //     u = construct_alternate_initial_solution();
     // }
-    // u = improve_initial_solution(u);
-    vector<vector<ll>> u(m + 1);
-    for (int i = 1; i < r; i++) {
-        u[m].push_back(i);
-    }
+    u = improve_initial_solution(u);
+    // vector<vector<ll>> u(m + 1);
+    // for (int i = 1; i < r; i++) {
+    //     u[m].push_back(i);
+    // }
     u = get<0>(insert(u, 1));
     if(tourInvalid(u)) {
         u.clear();

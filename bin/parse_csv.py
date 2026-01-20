@@ -38,8 +38,9 @@ with open(csv_file, newline='') as f:
             except ValueError:
                 continue  # skip if missing or invalid
 
-            if gap_val < 0:
-                negatives.append((instance, T, gap_val))
+            # if gap_val < 0:
+            #     negatives.append((instance, T, gap_val))
+            negatives.append((instance, T, gap_val))
 
 # Print results
 for inst, T, gap_val in negatives:

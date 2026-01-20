@@ -31,6 +31,7 @@ process merge_results {
 }
 
 process run_instances {
+    maxForks 8
     publishDir "instance_results", mode: 'copy'
 
     input:
