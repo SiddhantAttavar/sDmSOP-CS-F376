@@ -8,7 +8,7 @@ using namespace std;
 struct Solution {
 	ld temperature;
 	vector<vector<ll>> u;
-	ll  n, m, r, Tmax;
+	ll  n, m, r, Tmax, T;
 	ll total_profit = 0; 
 	vector<vector<ll>> cost, cluster;
     vector<vector<ll>> cities_in_cluster;

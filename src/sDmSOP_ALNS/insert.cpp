@@ -4,17 +4,16 @@
 #include <bits/stdc++.h>
 #include "utils.h"
 #include "solution.h"
-#include "calc.h"
 using namespace std;
 
-pair<vector<ll>, vector<ll>> preprocess_costs(vector<vector<ll>> &u, Solution &s) {
+array<vi, 4> preprocess_costs(vector<vector<ll>> &u, Solution &s, int modified = -1) {
     vector<ll> dp(s.n + 1, INF), rdp(s.n + 1, INF);
     for (int k : s.cities_in_cluster[0]) {
         dp[k] = 0;
         rdp[k] = 0;
     }
-    for (int i = 0; i < sz(u); i++) {
-        if (u[i].empty()) {
+    for (int i = 0; i < sz(u) - 1; i++) {
+        if (u[i].empty() or (modified != -1 and modified != i)) {
             continue;
         }
         for (int k : s.cities_in_cluster[u[i][0]]) {
@@ -49,42 +48,63 @@ pair<vector<ll>, vector<ll>> preprocess_costs(vector<vector<ll>> &u, Solution &s
             h[i] = min(h[i], rdp[j]);
         }
     }
-    return {g, h};
+    return {g, h, dp, rdp};
 }
 
-vector<pair<ll, ii>> insertion_costs(vector<vector<ll>> &u, Solution &s, int v) {
-    auto [g, h] = preprocess_costs(u, s);
-    vector<pair<ll, ii>> res;
-    for (int i = 0; i < sz(u) - 1; i++) {
-        ll x = cost_of_path(u[i], s);
-        for (int j = 0; j <= sz(u[i]); j++) {
-            int prev = j > 0 ? u[i][j - 1] : 0, next = j < u[i].size() ? u[i][j] : 0;
-            ll bound1 = g[prev] + s.extended_cost[prev][v] + s.extended_cost[v][next] + h[next];
-            if (bound1 > s.Tmax / s.m) {
-                continue;
-            }
-            ll z = g[prev] + h[next];
-            ll bound2 = INF;
-            for (int k : s.cities_in_cluster[v]) {
-                bound2 = min(bound2, z + s.extended_cost[prev][k + s.r] + s.extended_cost[k + s.r][next]);
-            }
-            if (bound2 > s.Tmax / s.m) {
-                continue;
-            }
-
-            vector<ll> l = u[i];
-            l.insert(l.begin() + j, v);
-            ll y = cost_of_path(l, s);
-            if (y <= s.Tmax / s.m) {
-                res.push_back({y - x, {i, j}});
+void insertion_costs(vector<pair<ll, ii>> &res, vector<vector<ll>> &u, Solution &s, int v, int modified = -1) {
+    auto [g, h, dp, rdp] = preprocess_costs(u, s, modified);
+    vector<pair<ll, ii>> cost;
+    if (modified != -1) {
+        for (auto [c, p] : res) {
+            if (p.first != modified) {
+                cost.push_back({c, p});
             }
         }
     }
-    return res;
+    res = cost;
+
+    for (int i = 0; i < sz(u) - 1; i++) {
+        if (modified != -1 and modified != i) {
+            continue;
+        }
+
+        ll base_cost = 0;
+        if (!u[i].empty()) {
+            base_cost = INF;
+            for (int k : s.cities_in_cluster[u[i][0]]) {
+                base_cost = min(base_cost, dp[k] + rdp[k]);
+            }
+        }
+        for (int j = 0; j <= sz(u[i]); j++) {
+            int prev = j > 0 ? u[i][j - 1] : 0, next = j < u[i].size() ? u[i][j] : 0;
+            ll z = g[prev] + h[next], insert_cost = INF;
+            if (z + s.extended_cost[prev][v] + s.extended_cost[v][next] > s.T) {
+                continue;
+            }
+            for (int k : s.cities_in_cluster[v]) {
+                if (z + s.extended_cost[prev][k + s.r] + s.extended_cost[k + s.r][next] > s.T) {
+                    continue;
+                }
+                for (int p : s.cities_in_cluster[prev]) {
+                    if (dp[p] + s.cost[p][k] + s.extended_cost[k + s.r][next] > s.T) {
+                        continue;
+                    }
+                    for (int q : s.cities_in_cluster[next]) {
+                        insert_cost = min(insert_cost, dp[p] + s.cost[p][k] + s.cost[k][q] + rdp[q]);
+                    }
+                }
+            }
+
+            if (insert_cost <= s.T) {
+                res.push_back({insert_cost - base_cost, {i, j}});
+            }
+        }
+    }
 }
 
 ii find_least_cost_insertion_position(vector<vector<ll>> &u, Solution &s, int v) {
-    vector<pair<ll, ii>> l = insertion_costs(u, s, v);
+    vector<pair<ll, ii>> l;
+    insertion_costs(l, u, s, v);
     if (l.empty()) {
         return {-1, -1};
     }
@@ -138,28 +158,31 @@ vector<vector<ll>> insert_3(vector<vector<ll>> &u, Solution &s) {
 
 vector<vector<ll>> parallel_insert(vector<vector<ll>> u, Solution &s, function<int(vector<vector<pair<ll, ii>>>&)> select) {
     vector<ll> left;
+    int modified = -1;
     while (!u.back().empty()) {
         vector<vector<pair<ll, ii>>> costs;
-        vector<ll> v;
         vector<ll> temp;
         for (int i : u.back()) {
-            vector<pair<ll, ii>> cost = insertion_costs(u, s, i);
+            vector<pair<ll, ii>> cost;
+            insertion_costs(cost, u, s, i, modified);
             if (!cost.empty()) {
                 costs.push_back(cost);
                 temp.push_back(i);
             }
             else {
-                v.push_back(i);
                 left.push_back(i);
             }
         }
         u.back() = temp;
         int j = select(costs);
-        if (j != -1) {
-            ii p = min_element(costs[j].begin(), costs[j].end())->second;
-            u[p.first].insert(u[p.first].begin() + p.second, u.back()[j]);
-            u.back().erase(u.back().begin() + j);
+        if (j == -1) {
+            break;
         }
+
+        ii p = min_element(costs[j].begin(), costs[j].end())->second;
+        u[p.first].insert(u[p.first].begin() + p.second, u.back()[j]);
+        u.back().erase(u.back().begin() + j);
+        modified = p.first;
     }
     u.back() = left;
     return u;
@@ -208,6 +231,7 @@ vector<vector<ll>> regret_k_insert(vector<vector<ll>> u, Solution &s, int k) {
             if (v[i].size() < k) {
                 return i;
             }
+
             sort(v[i].begin(), v[i].end());
             ll c = 0;
             for (int j = 1; j < k; j++) {

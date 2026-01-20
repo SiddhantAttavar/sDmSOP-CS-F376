@@ -52,7 +52,6 @@ void update_weights(vector<double> &weights, int op, double reward, ll time, dou
      }
 }
 
-
 /*
 * MTSP ALNS Alogorithm
 */
@@ -134,12 +133,12 @@ void mtsp_alns(Solution &s, ll  stoppingTime) {
 
     cout << "Removal weights: ";
     for (double i : s.removal_weights) {
-        cout << std::fixed << setprecision(2) << i << ' ';
+        cout << std::fixed << setprecision(4) << i << ' ';
     }
     cout << endl;
     cout << "Insertion weights: ";
     for (double i : s.insertion_weights) {
-        cout << std::fixed << setprecision(2) << i << ' ';
+        cout << std::fixed << setprecision(4) << i << ' ';
     }
     cout << endl;
 
@@ -150,8 +149,6 @@ void mtsp_alns(Solution &s, ll  stoppingTime) {
     cerr<<"Algorithm terminated"<<endl;
     s.u = u_best;
 }
-
-
 
 /*
 * Driver function
@@ -172,7 +169,6 @@ signed main(int argc, char *argv[]) {
         outfile<<0<<endl<<0<<endl<<"Invalid File: Not enough salesmen"<<endl;
         return 0;
     }
-
 
     srand(time(NULL)); // initialize seed
     set_cities_in_cluster(s);

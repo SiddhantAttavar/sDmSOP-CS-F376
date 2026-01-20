@@ -167,7 +167,7 @@ ll getTourCost(const vi &cost){
 
 bool tourInvalid(vector<vi> &u, Solution &s){
     vi tourCosts = L(u, s); 
-    return *max_element(all(tourCosts)) > s.Tmax / s.m;
+    return *max_element(all(tourCosts)) > s.T;
 }
 
 /*
