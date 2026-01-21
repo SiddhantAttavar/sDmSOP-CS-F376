@@ -56,8 +56,8 @@ void update_weights(vector<double> &weights, int op, double reward, ll time, dou
 * MTSP ALNS Alogorithm
 */
 void mtsp_alns(Solution &s, ll  stoppingTime) {
-    // vector<vector<ll>> u = construct_alternate_initial_solution();
-    construct_initial_solution(s);
+    construct_alternate_initial_solution(s);
+    // construct_initial_solution(s);
     // if(tourInvalid(u)) {
     //     u = construct_alternate_initial_solution();
     // }

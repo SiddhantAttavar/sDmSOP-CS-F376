@@ -10,40 +10,45 @@ using namespace std;
 /*
  * Random remove
  */
-vector<vector<ll>> remove_1(vector<vector<ll>> u, Solution &s) {
+vector<ii> remove_1(vector<vector<ll>> u, Solution &s) {
     int i = rand() % (s.r - sz(u.back()) - 1);
-    ii p = find_pos_in_u(u, i);
-    u.back().push_back(u[p.first][p.second]);
-    u[p.first].erase(u[p.first].begin() + p.second);
-    return u;
+    return {find_pos_in_u(u, i)};
 }
 
 /*
  * Worst cost removal
  */
-vector<vector<ll>> remove_2(vector<vector<ll>> u, Solution &s) {
+vector<ii> remove_2(vector<vector<ll>> u, Solution &s) {
+    auto [g, h, dp, rdp] = preprocess_costs(u, s, -1);
     vector<pair<ll, ii>> cost;
     for (int i = 0; i < sz(u) - 1; i++) {
-        ll x = cost_of_path(u[i], s);
+        ll base_cost = 0;
+        if (!u[i].empty()) {
+            base_cost = INF;
+            for (int k : s.cities_in_cluster[u[i][0]]) {
+                base_cost = min(base_cost, dp[k] + rdp[k]);
+            }
+        }
         for (int j = 0; j < sz(u[i]); j++) {
-            vector<ll> l = u[i];
-            l.erase(l.begin() + j);
-            cost.push_back({cost_of_path(l, s) - x, {i, j}});
+            int prev = j > 0 ? u[i][j - 1] : 0, next = j < sz(u[i]) - 1 ? u[i][j + 1] : 0;
+            ll removal_cost = INF;
+            for (int p : s.cities_in_cluster[prev]) {
+                for (int q : s.cities_in_cluster[next]) {
+                    removal_cost = min(removal_cost, dp[p] + s.cost[p][q] + rdp[q]);
+                }
+            }
+            cost.push_back({removal_cost - base_cost, {i, j}});
         }
     }
 
     sort(cost.begin(), cost.end());
-    ii p = rp_select(cost, 5).second;
-
-    u.back().push_back(u[p.first][p.second]);
-    u[p.first].erase(u[p.first].begin() + p.second);
-    return u;
+    return {rp_select(cost, 5).second};
 }
 
 /*
  * Worst profit removal
  */
-vector<vector<ll>> remove_3(vector<vector<ll>> u, Solution &s) {
+vector<ii> remove_3(vector<vector<ll>> &u, Solution &s) {
     vector<pair<ll, ii>> cost;
     for (ll i = 0; i < sz(u) - 1; i++) {
         for (ll j = 0; j < sz(u[i]); j++) {
@@ -52,41 +57,45 @@ vector<vector<ll>> remove_3(vector<vector<ll>> u, Solution &s) {
     }
 
     sort(cost.begin(), cost.end());
-    ii p = rp_select(cost, 10).second;
-
-    u.back().push_back(u[p.first][p.second]);
-    u[p.first].erase(u[p.first].begin() + p.second);
-    return u;
+    return {rp_select(cost, 10).second};
 }
 
 /*
  * Worst profit over cost removal
  */
-vector<vector<ll>> remove_4(vector<vector<ll>> u, Solution &s) {
+vector<ii> remove_4(vector<vector<ll>> &u, Solution &s) {
+    auto [g, h, dp, rdp] = preprocess_costs(u, s, -1);
     vector<pair<ii, ii>> cost;
     for (int i = 0; i < sz(u) - 1; i++) {
-        ll x = cost_of_path(u[i], s);
+        ll base_cost = 0;
+        if (!u[i].empty()) {
+            base_cost = INF;
+            for (int k : s.cities_in_cluster[u[i][0]]) {
+                base_cost = min(base_cost, dp[k] + rdp[k]);
+            }
+        }
         for (int j = 0; j < sz(u[i]); j++) {
-            vector<ll> l = u[i];
-            l.erase(l.begin() + j);
+            int prev = j > 0 ? u[i][j - 1] : 0, next = j < sz(u[i]) - 1 ? u[i][j + 1] : 0;
+            ll removal_cost = INF;
+            for (int p : s.cities_in_cluster[prev]) {
+                for (int q : s.cities_in_cluster[next]) {
+                    removal_cost = min(removal_cost, dp[p] + s.cost[p][q] + rdp[q]);
+                }
+            }
             cost.push_back({
-                make_pair(s.profit[u[i][j]], cost_of_path(l, s) - x),
+                make_pair(s.profit[u[i][j]], removal_cost - base_cost),
                 make_pair(i, j)
             });
         }
     }
 
     sort(cost.begin(), cost.end(), [](pair<ii, ii> a, pair<ii, ii> b) {
-        return a.first.first * b.first.second < b.first.first * b.first.second;
+        return a.first.first * b.first.second < b.first.first * a.first.second;
     });
-    ii p = rp_select(cost, 4).second;
-
-    u.back().push_back(u[p.first][p.second]);
-    u[p.first].erase(u[p.first].begin() + p.second);
-    return u;
+    return {rp_select(cost, 4).second};
 }
 
-vector<vector<ll>> remove_5(vector<vector<ll>> u, Solution &s) {
+vector<ii> remove_5(vector<vector<ll>> &u, Solution &s) {
     vector<pair<ll, ii>> l;
     for (int i = 0; i < sz(u) - 1; i++) {
         for (int j = 0; j < sz(u[i]); j++) {
@@ -108,16 +117,11 @@ vector<vector<ll>> remove_5(vector<vector<ll>> u, Solution &s) {
     }
     sort(cost.begin(), cost.end());
     if (cost.empty()) {
-        return u;
+        return {};
     }
 
     auto [p, q] = rp_select(cost, 10).second;
-    tie(p, q) = minmax(p, q);
-    u.back().push_back(u[q.first][q.second]);
-    u[q.first].erase(u[q.first].begin() + q.second);
-    u.back().push_back(u[p.first][p.second]);
-    u[p.first].erase(u[p.first].begin() + p.second);
-    return u;
+    return {p, q};
 }
 
 /*
@@ -144,32 +148,38 @@ tuple<vector<vi>, int, ll> remove(Solution &s) {
     // int x = getRand(4, REMOVAL_CONSTANT * k);
 	vector<vi> u = s.u;
     int l = priority_select(s.removal_weights);
-    while (x--) {
-        vector<vector<ll>> u1 = u;
+    while (x > 0) {
+        vector<ii> p;
         switch(l) {
             case 0:
-                u1 = remove_1(u, s);
+                p = remove_1(u, s);
                 break;
             case 1:
-                u1 = remove_2(u, s);
+                p = remove_2(u, s);
                 break;
             case 2:
-                u1 = remove_3(u, s);
+                p = remove_3(u, s);
                 break;
             case 3:
-                u1 = remove_4(u, s);
+                p = remove_4(u, s);
                 break;
             case 4:
-                u1 = remove_5(u, s);
+                p = remove_5(u, s);
                 break;
         }
         // cerr<<"Shaking the configuration done"<<endl;
-        u = u1;
+        sort(all(p));
+        reverse(all(p));
+        for (auto [i, j] : p) {
+            int v = u[i][j];
+            u.back().push_back(v);
+            u[i].erase(u[i].begin() + j);
+        }
+        x -= max(1ll, sz(p));
     }
     auto end = std::chrono::high_resolution_clock::now();
     ll time = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
     return {u, l, time};
 }
-
 
 #endif

@@ -4,52 +4,8 @@
 #include <bits/stdc++.h>
 #include "utils.h"
 #include "solution.h"
+#include "calc.h"
 using namespace std;
-
-array<vi, 4> preprocess_costs(vector<vector<ll>> &u, Solution &s, int modified = -1) {
-    vector<ll> dp(s.n + 1, INF), rdp(s.n + 1, INF);
-    for (int k : s.cities_in_cluster[0]) {
-        dp[k] = 0;
-        rdp[k] = 0;
-    }
-    for (int i = 0; i < sz(u) - 1; i++) {
-        if (u[i].empty() or (modified != -1 and modified != i)) {
-            continue;
-        }
-        for (int k : s.cities_in_cluster[u[i][0]]) {
-            for (int v : s.cities_in_cluster[0]) {
-                dp[k] = min(dp[k], dp[v] + s.cost[v][k]);
-            }
-        }
-        for (int j = 1; j < sz(u[i]); j++) {
-            for (int k : s.cities_in_cluster[u[i][j]]) {
-                for (int v : s.cities_in_cluster[u[i][j - 1]]) {
-                    dp[k] = min(dp[k], dp[v] + s.cost[v][k]);
-                }
-            }
-        }
-        for (int k : s.cities_in_cluster[u[i].back()]) {
-            for (int v : s.cities_in_cluster[0]) {
-                rdp[k] = min(rdp[k], rdp[v] + s.cost[k][v]);
-            }
-        }
-        for (int j = sz(u[i]) - 2; j >= 0; j--) {
-            for (int k : s.cities_in_cluster[u[i][j]]) {
-                for (int v : s.cities_in_cluster[u[i][j + 1]]) {
-                    rdp[k] = min(rdp[k], rdp[v] + s.cost[k][v]);
-                }
-            }
-        }
-    }
-    vector<ll> g(s.r, INF), h(s.r, INF);
-    for (int i = 0; i < s.r; i++) {
-        for (int j : s.cities_in_cluster[i]) {
-            g[i] = min(g[i], dp[j]);
-            h[i] = min(h[i], rdp[j]);
-        }
-    }
-    return {g, h, dp, rdp};
-}
 
 void insertion_costs(vector<pair<ll, ii>> &res, vector<vector<ll>> &u, Solution &s, int v, int modified = -1) {
     auto [g, h, dp, rdp] = preprocess_costs(u, s, modified);

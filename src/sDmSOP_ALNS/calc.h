@@ -15,7 +15,7 @@ vi  L(vector<vi> &u, Solution &s, bool printCity=false);
 void printCost(Solution &s, bool printCity=false);
 ll getTourCost(const vi &cost);
 bool tourInvalid(vector<vector<ll>> &u, Solution &s);
-ll cost_of_path(vector<ll> &l, Solution &s);
+array<vi, 4> preprocess_costs(vector<vector<ll>> &u, Solution &s, int modified = -1);
 bool no_salesmen_empty(vector<vector<ll>>& u);
 
 #endif

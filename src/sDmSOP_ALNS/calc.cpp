@@ -170,25 +170,51 @@ bool tourInvalid(vector<vi> &u, Solution &s){
     return *max_element(all(tourCosts)) > s.T;
 }
 
-/*
- * Calculate cost of single salesman
- */
-ll cost_of_path(vector<ll> &l, Solution &s) {
-    vector<vector<pair<ll,ll>>> dp(sz(l)+2); // Minimum cost of reaching each vertex of each cluster
-    //first stores min cost, second stores prev city
-    dp[0].pb({0,1});
-    ll  cluster1 = 0;
-    for(ll  j = 0; j < sz(l); j++) {
-        ll  cluster2 = l[j];
-        // cout << "prev cluster: " << cluster1 <<" next cluster: " << cluster2 << endl;
-        dp[j+1] = find_next_state_of_dp(s, cluster1, cluster2, dp[j]);
-        cluster1 = l[j];
+array<vi, 4> preprocess_costs(vector<vector<ll>> &u, Solution &s, int modified = -1) {
+    vector<ll> dp(s.n + 1, INF), rdp(s.n + 1, INF);
+    for (int k : s.cities_in_cluster[0]) {
+        dp[k] = 0;
+        rdp[k] = 0;
     }
-    ll  cluster2 = 0;
-
-    dp[sz(l)+1] =  find_next_state_of_dp(s, cluster1, cluster2, dp[sz(l)]);
-    return dp[sz(l)+1][0].ff;
+    for (int i = 0; i < sz(u) - 1; i++) {
+        if (u[i].empty() or (modified != -1 and modified != i)) {
+            continue;
+        }
+        for (int k : s.cities_in_cluster[u[i][0]]) {
+            for (int v : s.cities_in_cluster[0]) {
+                dp[k] = min(dp[k], dp[v] + s.cost[v][k]);
+            }
+        }
+        for (int j = 1; j < sz(u[i]); j++) {
+            for (int k : s.cities_in_cluster[u[i][j]]) {
+                for (int v : s.cities_in_cluster[u[i][j - 1]]) {
+                    dp[k] = min(dp[k], dp[v] + s.cost[v][k]);
+                }
+            }
+        }
+        for (int k : s.cities_in_cluster[u[i].back()]) {
+            for (int v : s.cities_in_cluster[0]) {
+                rdp[k] = min(rdp[k], rdp[v] + s.cost[k][v]);
+            }
+        }
+        for (int j = sz(u[i]) - 2; j >= 0; j--) {
+            for (int k : s.cities_in_cluster[u[i][j]]) {
+                for (int v : s.cities_in_cluster[u[i][j + 1]]) {
+                    rdp[k] = min(rdp[k], rdp[v] + s.cost[k][v]);
+                }
+            }
+        }
+    }
+    vector<ll> g(s.r, INF), h(s.r, INF);
+    for (int i = 0; i < s.r; i++) {
+        for (int j : s.cities_in_cluster[i]) {
+            g[i] = min(g[i], dp[j]);
+            h[i] = min(h[i], rdp[j]);
+        }
+    }
+    return {g, h, dp, rdp};
 }
+
 
 /*
 * Returns false if any salesman doesn't visit any city. True otherwise
