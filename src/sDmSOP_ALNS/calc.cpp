@@ -1,9 +1,7 @@
-#ifndef CALC_H
-#define CALC_H
-
 #include <bits/stdc++.h>
-#include "utils.h"
 #include "solution.h"
+#include "utils.h"
+#include "instance.h"
 using namespace std;
 
 /*
@@ -21,30 +19,30 @@ ll P(vector<vi> &u, vi &profit) {
 }
 
 /*
-* Prll  profit obtained by the final sequence
+* Print profit obtained by the final sequence
 */
-void printProfit(Solution &s) {
+void printProfit(Solution &t, Instance &s) {
     // cerr<<"Printing max profit"<<endl;
-    cout<<"Max profit is: "<<P(s.u, s.profit)<<endl;
+    cout<<"Max profit is: "<<P(t.u, s.profit)<<endl;
     // cerr<<"Printing max profit done"<<endl;
 }
 
 /*
-* Prll  list of cities (in order) visited by each salesman
+* Print list of cities (in order) visited by each salesman
 */
-void printTour(Solution &s) {
+void printTour(Solution &t, Instance &s) {
     // cerr<<"Printing Tour"<<endl;
     cout<<"Set of visited vertices is: "<<endl;
-    for(ll  i = 0; i < sz(s.u)-1; i++) {
+    for(ll  i = 0; i < sz(t.u)-1; i++) {
         cout<<"sequence of sets for salesman "<<i+1<<": { ";
         // vector<ll> salesmanSet = ;
-        for(ll  set: s.u[i]) {
+        for(ll  set: t.u[i]) {
             cout<<set<<" ";
         }
         cout<<"}"<<endl;
     }
     cout<<"sets not visisted by any salesmen are: ";
-    for(ll  i: s.u[sz(s.u)-1])
+    for(ll  i: t.u[sz(t.u)-1])
         cout<<i<<" ";
     cout<<endl;
     cerr<<"Printing Tour done"<<endl;
@@ -76,7 +74,7 @@ ii find_pos_in_u(vector<vi> &u, ll  index) {
 /*
 * Finds the next state of dp given the start and end clusters and the previous dp values
 */
-vector<pair<ll,ll>> find_next_state_of_dp(Solution &s, ll  cluster1, ll  cluster2, vector<pair<ll,ll>> dp_row) {
+vector<pair<ll,ll>> find_next_state_of_dp(Instance &s, ll  cluster1, ll  cluster2, vector<pair<ll,ll>> dp_row) {
     // cerr<<"Finding the next dp state for movement from "<<cluster1<<" to "<<cluster2<<"....."<<endl;
 
     vector<pair<ll,ll>> dp_cur(sz(s.cities_in_cluster[cluster2]), {INF,0});
@@ -100,7 +98,7 @@ vector<pair<ll,ll>> find_next_state_of_dp(Solution &s, ll  cluster1, ll  cluster
 */
 
 // Add depot cost here
-vi  L(vector<vi> &u, Solution &s, bool printCity=false) {
+vi  L(vector<vi> &u, Instance &s, bool printCity=false) {
     // cerr<<"Calculating cost for the current configuration....."<<endl;
     // printTour(u);
     vi  cost(sz(u) - 1,0);
@@ -147,9 +145,9 @@ vi  L(vector<vi> &u, Solution &s, bool printCity=false) {
 /*
 * Prints the cost of given configuration
 */
-void printCost(Solution &s, bool printCity=false) {
+void printCost(Solution &t, Instance &s, bool printCity=false) {
     // cerr<<"Printing Cost of tour"<<endl;
-    vi cost = L(s.u, s, printCity);
+    vi cost = L(t.u, s, printCity);
     ll tot = 0;
     for(int i=0; i<sz(cost); i++){
         cout<<"Cost for traveller "<< i+1 << " is " << cost[i] <<endl;
@@ -165,54 +163,66 @@ ll getTourCost(const vi &cost){
 }
 
 
-bool tourInvalid(vector<vi> &u, Solution &s){
+bool tourInvalid(vector<vi> &u, Instance &s){
     vi tourCosts = L(u, s); 
     return *max_element(all(tourCosts)) > s.T;
 }
 
-array<vi, 4> preprocess_costs(vector<vector<ll>> &u, Solution &s, int modified = -1) {
-    vector<ll> dp(s.n + 1, INF), rdp(s.n + 1, INF);
-    for (int k : s.cities_in_cluster[0]) {
-        dp[k] = 0;
-        rdp[k] = 0;
+void preprocess_costs(Solution &t, Instance &s, int modified = -1) {
+    if (modified == 0) {
+        return;
     }
-    for (int i = 0; i < sz(u) - 1; i++) {
-        if (u[i].empty() or (modified != -1 and modified != i)) {
-            continue;
+    if (modified == -1) {
+        for (int i = 1; i < sz(t.u) - 1; i++) {
+            preprocess_costs(t, s, i);
         }
-        for (int k : s.cities_in_cluster[u[i][0]]) {
-            for (int v : s.cities_in_cluster[0]) {
-                dp[k] = min(dp[k], dp[v] + s.cost[v][k]);
-            }
-        }
-        for (int j = 1; j < sz(u[i]); j++) {
-            for (int k : s.cities_in_cluster[u[i][j]]) {
-                for (int v : s.cities_in_cluster[u[i][j - 1]]) {
-                    dp[k] = min(dp[k], dp[v] + s.cost[v][k]);
-                }
-            }
-        }
-        for (int k : s.cities_in_cluster[u[i].back()]) {
-            for (int v : s.cities_in_cluster[0]) {
-                rdp[k] = min(rdp[k], rdp[v] + s.cost[k][v]);
-            }
-        }
-        for (int j = sz(u[i]) - 2; j >= 0; j--) {
-            for (int k : s.cities_in_cluster[u[i][j]]) {
-                for (int v : s.cities_in_cluster[u[i][j + 1]]) {
-                    rdp[k] = min(rdp[k], rdp[v] + s.cost[k][v]);
-                }
-            }
+        return;
+    }
+
+    int i = modified;
+    for (int j : t.u[i]) {
+        t.g[j] = INF;
+        t.h[j] = INF;
+        for (int k : s.cities_in_cluster[j]) {
+            t.dp[k] = INF;
+            t.rdp[k] = INF;
         }
     }
-    vector<ll> g(s.r, INF), h(s.r, INF);
-    for (int i = 0; i < s.r; i++) {
-        for (int j : s.cities_in_cluster[i]) {
-            g[i] = min(g[i], dp[j]);
-            h[i] = min(h[i], rdp[j]);
+
+    if (t.u[i].empty()) {
+        return;
+    }
+
+    for (int k : s.cities_in_cluster[t.u[i][0]]) {
+        for (int v : s.cities_in_cluster[0]) {
+            t.dp[k] = min(t.dp[k], t.dp[v] + s.cost[v][k]);
         }
     }
-    return {g, h, dp, rdp};
+    for (int j = 1; j < sz(t.u[i]); j++) {
+        for (int k : s.cities_in_cluster[t.u[i][j]]) {
+            for (int v : s.cities_in_cluster[t.u[i][j - 1]]) {
+                t.dp[k] = min(t.dp[k], t.dp[v] + s.cost[v][k]);
+            }
+        }
+    }
+    for (int k : s.cities_in_cluster[t.u[i].back()]) {
+        for (int v : s.cities_in_cluster[0]) {
+            t.rdp[k] = min(t.rdp[k], t.rdp[v] + s.cost[k][v]);
+        }
+    }
+    for (int j = sz(t.u[i]) - 2; j >= 0; j--) {
+        for (int k : s.cities_in_cluster[t.u[i][j]]) {
+            for (int v : s.cities_in_cluster[t.u[i][j + 1]]) {
+                t.rdp[k] = min(t.rdp[k], t.rdp[v] + s.cost[k][v]);
+            }
+        }
+    }
+    for (int j : t.u[i]) {
+        for (int k : s.cities_in_cluster[j]) {
+            t.g[j] = min(t.g[j], t.dp[k]);
+            t.h[j] = min(t.h[j], t.rdp[k]);
+        }
+    }
 }
 
 
@@ -227,4 +237,10 @@ bool no_salesmen_empty(vector<vector<ll>>& u) {
     return true;
 }
 
-#endif
+/*
+* Objective function for algorithm 1 of constructing solutions
+*/
+ld objective_function_algorithm_1(vector<vector<ll>>& u1, vector<vector<ll>>& u2, Instance &s, ll  p_extra) {
+    // printTour(u1);
+    return (getTourCost(L(u1, s))-getTourCost(L(u2, s)))/(ld)p_extra;
+}
