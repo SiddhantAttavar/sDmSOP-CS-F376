@@ -1,15 +1,12 @@
-#ifndef PRECOMP_H
-#define PRECOMP_H
-
 #include <bits/stdc++.h>
 #include "utils.h"
-#include "solution.h"
+#include "instance.h"
 using namespace std;
 
 /*
 * Set cities that are in each cluster
 */
-void set_cities_in_cluster(Solution &s) {
+void set_cities_in_cluster(Instance &s) {
     // cerr<<"Setting cities in each cluster"<<endl;
     s.cities_in_cluster.resize(s.r);
     for(ll  i=0; i<s.r; i++) {
@@ -26,7 +23,7 @@ void set_cities_in_cluster(Solution &s) {
 /*
  * Calculate proximity for each cluster
  */
-void calculate_proximity(Solution &s) {
+void calculate_proximity(Instance &s) {
     s.proximity.resize(s.r, {0, 0});
     for (int i = 0; i < s.r; i++) {
         for (int u : s.cities_in_cluster[i]) {
@@ -39,7 +36,7 @@ void calculate_proximity(Solution &s) {
 }
 
 
-void calculate_relatedness(Solution &s) {
+void calculate_relatedness(Instance &s) {
     s.relatedness.resize(s.r);
     for (int i = 0; i < s.r; i++) {
         s.relatedness[i].resize(s.r, 0);
@@ -62,7 +59,7 @@ void calculate_relatedness(Solution &s) {
     }
 }
 
-void calculate_extended_cost(Solution &s) {
+void calculate_extended_cost(Instance &s) {
     s.extended_cost.resize(s.n + s.r + 1, vector<ll>(s.n + s.r + 1, INF));
     for (int i = 0; i < s.n; i++) {
         for (int j = 0; j < s.n; j++) {
@@ -85,5 +82,3 @@ void calculate_extended_cost(Solution &s) {
         }
     }
 }
-
-#endif

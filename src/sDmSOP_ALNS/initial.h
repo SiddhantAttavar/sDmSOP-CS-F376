@@ -1,15 +1,12 @@
-#ifndef INITIAL_H
-#define INITIAL_H
+#pragma once
 
 #include <bits/stdc++.h>
-#include "utils.h"
 #include "solution.h"
+#include "utils.h"
+#include "instance.h"
 #include "calc.h"
 using namespace std;
 
-ld objective_function_algorithm_1(vector<vector<ll>>& u1, vector<vector<ll>>& u2, Solution &s, ll  p_extra);
-void construct_alternate_initial_solution(Solution &s);
-void construct_initial_solution(Solution &s);
-void improve_initial_solution(Solution &s);
-
-#endif
+Solution construct_alternate_initial_solution(Instance &s);
+Solution construct_initial_solution(Instance &s);
+void improve_initial_solution(Instance &s, Solution &t);

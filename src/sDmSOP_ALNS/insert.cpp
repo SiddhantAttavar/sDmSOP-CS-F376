@@ -1,14 +1,13 @@
-#ifndef INSERT_H
-#define INSERT_H
-
+#include <algorithm>
 #include <bits/stdc++.h>
-#include "utils.h"
 #include "solution.h"
+#include "utils.h"
+#include "instance.h"
 #include "calc.h"
 using namespace std;
 
-void insertion_costs(vector<pair<ll, ii>> &res, vector<vector<ll>> &u, Solution &s, int v, int modified = -1) {
-    auto [g, h, dp, rdp] = preprocess_costs(u, s, modified);
+void insertion_costs(vector<pair<ll, ii>> &res, Solution &t, Instance &s, int v, int modified = -1) {
+    preprocess_costs(t, s, modified);
     vector<pair<ll, ii>> cost;
     if (modified != -1) {
         for (auto [c, p] : res) {
@@ -19,21 +18,21 @@ void insertion_costs(vector<pair<ll, ii>> &res, vector<vector<ll>> &u, Solution 
     }
     res = cost;
 
-    for (int i = 0; i < sz(u) - 1; i++) {
+    for (int i = 0; i < sz(t.u) - 1; i++) {
         if (modified != -1 and modified != i) {
             continue;
         }
 
         ll base_cost = 0;
-        if (!u[i].empty()) {
+        if (!t.u[i].empty()) {
             base_cost = INF;
-            for (int k : s.cities_in_cluster[u[i][0]]) {
-                base_cost = min(base_cost, dp[k] + rdp[k]);
+            for (int k : s.cities_in_cluster[t.u[i][0]]) {
+                base_cost = min(base_cost, t.dp[k] + t.rdp[k]);
             }
         }
-        for (int j = 0; j <= sz(u[i]); j++) {
-            int prev = j > 0 ? u[i][j - 1] : 0, next = j < u[i].size() ? u[i][j] : 0;
-            ll z = g[prev] + h[next], insert_cost = INF;
+        for (int j = 0; j <= sz(t.u[i]); j++) {
+            int prev = j > 0 ? t.u[i][j - 1] : 0, next = j < t.u[i].size() ? t.u[i][j] : 0;
+            ll z = t.g[prev] + t.h[next], insert_cost = INF;
             if (z + s.extended_cost[prev][v] + s.extended_cost[v][next] > s.T) {
                 continue;
             }
@@ -42,11 +41,11 @@ void insertion_costs(vector<pair<ll, ii>> &res, vector<vector<ll>> &u, Solution 
                     continue;
                 }
                 for (int p : s.cities_in_cluster[prev]) {
-                    if (dp[p] + s.cost[p][k] + s.extended_cost[k + s.r][next] > s.T) {
+                    if (t.dp[p] + s.cost[p][k] + s.extended_cost[k + s.r][next] > s.T) {
                         continue;
                     }
                     for (int q : s.cities_in_cluster[next]) {
-                        insert_cost = min(insert_cost, dp[p] + s.cost[p][k] + s.cost[k][q] + rdp[q]);
+                        insert_cost = min(insert_cost, t.dp[p] + s.cost[p][k] + s.cost[k][q] + t.rdp[q]);
                     }
                 }
             }
@@ -58,69 +57,69 @@ void insertion_costs(vector<pair<ll, ii>> &res, vector<vector<ll>> &u, Solution 
     }
 }
 
-ii find_least_cost_insertion_position(vector<vector<ll>> &u, Solution &s, int v) {
+ii find_least_cost_insertion_position(Solution &t, Instance &s, int v) {
     vector<pair<ll, ii>> l;
-    insertion_costs(l, u, s, v);
+    insertion_costs(l, t, s, v, -1);
     if (l.empty()) {
         return {-1, -1};
     }
     return min_element(l.begin(), l.end())->second;
 }
 
-vector<vector<ll>> predetermined_insert(vector<vector<ll>> u, Solution &s, int rp) {
+Solution predetermined_insert(Solution t, Instance &s, int rp) {
     vector<ll> v;
-    while (!u.back().empty()) {
-        int i = rp_select(u.back(), rp);
-        u.back().erase(find(u.back().begin(), u.back().end(), i));
-        ii p = find_least_cost_insertion_position(u, s, i);
+    while (!t.u.back().empty()) {
+        int i = rp_select(t.u.back(), rp);
+        t.u.back().erase(find(t.u.back().begin(), t.u.back().end(), i));
+        ii p = find_least_cost_insertion_position(t, s, i);
         if (p.first == -1) {
             v.push_back(i);
             continue;
         }
         assert(i < s.r);
-        u[p.first].insert(u[p.first].begin() + p.second, i);
+        t.u[p.first].insert(t.u[p.first].begin() + p.second, i);
     }
-    u.back() = v;
-    return u;
+    t.u.back() = v;
+    return t;
 }
 
 /*
  * Random insertion
  */
-vector<vector<ll>> insert_1(vector<vector<ll>> &u, Solution &s) {
-    shuffle(u.back().begin(), u.back().end(), rng);
-    return predetermined_insert(u, s, 5);
+Solution insert_1(Solution &t, Instance &s) {
+    shuffle(t.u.back().begin(), t.u.back().end(), rng);
+    return predetermined_insert(t, s, 5);
 }
 
 /*
  * Profit based insertion
  */
-vector<vector<ll>> insert_2(vector<vector<ll>> &u, Solution &s) {
-    sort(u.back().begin(), u.back().end(), [&](int a, int b) {
+Solution insert_2(Solution &t, Instance &s) {
+    sort(t.u.back().begin(), t.u.back().end(), [&](int a, int b) {
         return s.profit[a] > s.profit[b];
     });
-    return predetermined_insert(u, s, 4);
+    return predetermined_insert(t, s, 4);
 }
 
 /*
  * Proximity based insertion
  */
-vector<vector<ll>> insert_3(vector<vector<ll>> &u, Solution &s) {
-    sort(u.back().begin(), u.back().end(), [&](int a, int b) {
+Solution insert_3(Solution &t, Instance &s) {
+    sort(t.u.back().begin(), t.u.back().end(), [&](int a, int b) {
         return s.proximity[a].first * s.proximity[b].second > s.proximity[b].first * s.proximity[a].second;
     });
-    return predetermined_insert(u, s, 6);
+    return predetermined_insert(t, s, 6);
 }
 
-vector<vector<ll>> parallel_insert(vector<vector<ll>> u, Solution &s, function<int(vector<vector<pair<ll, ii>>>&)> select) {
+Solution parallel_insert(Solution t, Instance &s, function<int(vector<vector<pair<ll, ii>>>&)> select) {
     vector<ll> left;
     int modified = -1;
-    while (!u.back().empty()) {
+    while (!t.u.back().empty()) {
         vector<vector<pair<ll, ii>>> costs;
         vector<ll> temp;
-        for (int i : u.back()) {
+        for (int i : t.u.back()) {
             vector<pair<ll, ii>> cost;
-            insertion_costs(cost, u, s, i, modified);
+            insertion_costs(cost, t, s, i, modified);
             if (!cost.empty()) {
                 costs.push_back(cost);
                 temp.push_back(i);
@@ -129,26 +128,26 @@ vector<vector<ll>> parallel_insert(vector<vector<ll>> u, Solution &s, function<i
                 left.push_back(i);
             }
         }
-        u.back() = temp;
+        t.u.back() = temp;
         int j = select(costs);
         if (j == -1) {
             break;
         }
 
         ii p = min_element(costs[j].begin(), costs[j].end())->second;
-        u[p.first].insert(u[p.first].begin() + p.second, u.back()[j]);
-        u.back().erase(u.back().begin() + j);
+        t.u[p.first].insert(t.u[p.first].begin() + p.second, t.u.back()[j]);
+        t.u.back().erase(t.u.back().begin() + j);
         modified = p.first;
     }
-    u.back() = left;
-    return u;
+    t.u.back() = left;
+    return t;
 }
 
 /*
  * Cheapest insertion
  */
-vector<vector<ll>> insert_4(vector<vector<ll>> &u, Solution &s) {
-    return parallel_insert(u, s, [](vector<vector<pair<ll, ii>>> &v) {
+Solution insert_4(Solution &t, Instance &s) {
+    return parallel_insert(t, s, [](vector<vector<pair<ll, ii>>> &v) {
         ii res = {INF, -1};
         for (int i = 0; i < v.size(); i++) {
             if (!v[i].empty()) {
@@ -162,8 +161,8 @@ vector<vector<ll>> insert_4(vector<vector<ll>> &u, Solution &s) {
 /*
  * Dynamic profit over cost insertion
  */
-vector<vector<ll>> insert_5(vector<vector<ll>> &u, Solution &s) {
-    return parallel_insert(u, s, [&](vector<vector<pair<ll, ii>>> &v) {
+Solution insert_5(Solution &t, Instance &s) {
+    return parallel_insert(t, s, [&](vector<vector<pair<ll, ii>>> &v) {
         pair<ld, ll> res = {0, -1};
         for (int i = 0; i < v.size(); i++) {
             if (!v[i].empty()) {
@@ -177,8 +176,8 @@ vector<vector<ll>> insert_5(vector<vector<ll>> &u, Solution &s) {
 /*
  * Regret-k insertion
  */
-vector<vector<ll>> regret_k_insert(vector<vector<ll>> u, Solution &s, int k) {
-    return parallel_insert(u, s, [&](vector<vector<pair<ll, ii>>> &v) {
+Solution regret_k_insert(Solution &t, Instance &s, int k) {
+    return parallel_insert(t, s, [&](vector<vector<pair<ll, ii>>> &v) {
         pair<ll, int> res = {0, -1};
         for (int i = 0; i < v.size(); i++) {
             if (v[i].empty()) {
@@ -188,7 +187,7 @@ vector<vector<ll>> regret_k_insert(vector<vector<ll>> u, Solution &s, int k) {
                 return i;
             }
 
-            sort(v[i].begin(), v[i].end());
+            partial_sort(v[i].begin(), v[i].begin() + k, v[i].end());
             ll c = 0;
             for (int j = 1; j < k; j++) {
                 c += v[i][j].first - v[i][0].first;
@@ -202,22 +201,22 @@ vector<vector<ll>> regret_k_insert(vector<vector<ll>> u, Solution &s, int k) {
 /*
  * Regret-2 insertion
  */
-vector<vector<ll>> insert_6(vector<vector<ll>> &u, Solution &s) {
-    return regret_k_insert(u, s, 2);
+Solution insert_6(Solution &t, Instance &s) {
+    return regret_k_insert(t, s, 2);
 }
 
 /*
  * Regret-3 insertion
  */
-vector<vector<ll>> insert_7(vector<vector<ll>> &u, Solution &s) {
-    return regret_k_insert(u, s, 3);
+Solution insert_7(Solution &t, Instance &s) {
+    return regret_k_insert(t, s, 3);
 }
 
 /*
  * Dynamic profit regret-k insertion
  */
-vector<vector<ll>> dynamic_profit_regret_k_insert(vector<vector<ll>> &u, Solution &s, int k) {
-    return parallel_insert(u, s, [&](vector<vector<pair<ll, ii>>> &v) {
+Solution dynamic_profit_regret_k_insert(Solution &t, Instance &s, int k) {
+    return parallel_insert(t, s, [&](vector<vector<pair<ll, ii>>> &v) {
         pair<ld, int> res = {0, -1};
         for (int i = 0; i < v.size(); i++) {
             if (v[i].empty()) {
@@ -226,7 +225,8 @@ vector<vector<ll>> dynamic_profit_regret_k_insert(vector<vector<ll>> &u, Solutio
             if (v[i].size() < k) {
                 return i;
             }
-            sort(v[i].begin(), v[i].end());
+
+            partial_sort(v[i].begin(), v[i].begin() + k, v[i].end());
             ll c = 0;
             for (int j = 1; j < k; j++) {
                 c += v[i][j].first - v[i][0].first;
@@ -240,15 +240,15 @@ vector<vector<ll>> dynamic_profit_regret_k_insert(vector<vector<ll>> &u, Solutio
 /*
  * Dynamic profit regret-2 insertion
  */
-vector<vector<ll>> insert_8(vector<vector<ll>> &u, Solution &s) {
-    return dynamic_profit_regret_k_insert(u, s, 2);
+Solution insert_8(Solution &t, Instance &s) {
+    return dynamic_profit_regret_k_insert(t, s, 2);
 }
 
 /*
  * Dynamic profit regret-3 insertion
  */
-vector<vector<ll>> insert_9(vector<vector<ll>> &u, Solution &s) {
-    return dynamic_profit_regret_k_insert(u, s, 3);
+Solution insert_9(Solution &t, Instance &s) {
+    return dynamic_profit_regret_k_insert(t, s, 3);
 }
 
 /*
@@ -265,49 +265,47 @@ vector<vector<ll>> insert_9(vector<vector<ll>> &u, Solution &s) {
 * Another option can be to check all n^2 pairs for both neighborhoods.
 * We can add more neighborhoods structures later, if needed.
 */
-tuple<vector<vi>, int, ll> insert(vector<vector<ll>>& u, Solution &s, int l = -1) {
+tuple<Solution, int, ll> insert(Instance &s, Solution &t, int l = -1) {
     // cerr<<"Local search for the configuration....."<<endl;
-    if (u.back().empty()) {
-        return {u, -1, 0};
+    if (t.u.back().empty()) {
+        return {t, -1, 0};
     }
     auto start = std::chrono::high_resolution_clock::now();
-    vector<vi> u1;
+    Solution z = t;
     if (l == -1) {
         l = priority_select(s.insertion_weights);
     }
     switch(l) {
         case 0:
-            u1 = insert_1(u, s);
+            z = insert_1(z, s);
             break;
         case 1:
-            u1 = insert_2(u, s);
+            z = insert_2(z, s);
             break;
         case 2:
-            u1 = insert_3(u, s);
+            z = insert_3(z, s);
             break;
         case 3:
-            u1 = insert_4(u, s);
+            z = insert_4(z, s);
             break;
         case 4:
-            u1 = insert_5(u, s);
+            z = insert_5(z, s);
             break;
         case 5:
-            u1 = insert_6(u, s);
+            z = insert_6(z, s);
             break;
         case 6:
-            u1 = insert_7(u, s);
+            z = insert_7(z, s);
             break;
         case 7:
-            u1 = insert_8(u, s);
+            z = insert_8(z, s);
             break;
         case 8:
-            u1 = insert_9(u, s);
+            z = insert_9(z, s);
             break;
     }
     auto end = std::chrono::high_resolution_clock::now();
     ll time = chrono::duration_cast<chrono::nanoseconds>(end - start).count();
     // cerr<<"Local search for the configuration done"<<endl;
-    return {u1, l, time};
+    return {z, l, time};
 }
-
-#endif

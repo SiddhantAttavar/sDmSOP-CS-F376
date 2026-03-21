@@ -169,11 +169,8 @@ bool tourInvalid(vector<vi> &u, Instance &s){
 }
 
 void preprocess_costs(Solution &t, Instance &s, int modified = -1) {
-    if (modified == 0) {
-        return;
-    }
     if (modified == -1) {
-        for (int i = 1; i < sz(t.u) - 1; i++) {
+        for (int i = 0; i < sz(t.u) - 1; i++) {
             preprocess_costs(t, s, i);
         }
         return;

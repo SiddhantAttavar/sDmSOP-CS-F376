@@ -1,26 +1,16 @@
-#ifndef INITIAL_H
-#define INITIAL_H
-
 #include <bits/stdc++.h>
 #include "utils.h"
+#include "instance.h"
 #include "solution.h"
 #include "calc.h"
 using namespace std;
-
-/*
-* Objective function for algorithm 1 of constructing solutions
-*/
-ld objective_function_algorithm_1(vector<vector<ll>>& u1, vector<vector<ll>>& u2, Solution &s, ll  p_extra) {
-    // printTour(u1);
-    return (getTourCost(L(u1, s))-getTourCost(L(u2, s)))/(ld)p_extra;
-}
 
 /*
 * Hungarian algorithm based method to find alternate initial solutions. This is used in case when
 * the other approach doesn't give a solution in which all the visit atleast 1 set.
 * Hungarian algortihm: a is n x m adjacency matrix. in our case it would be m x r. 
 */
-void construct_alternate_initial_solution(Solution &s) {
+Solution construct_alternate_initial_solution(Instance &s) {
     // cerr<<"Constructing alternate initial solutions....."<<endl;
     
     vector<ll> weight_row(s.r, INF);
@@ -94,8 +84,8 @@ void construct_alternate_initial_solution(Solution &s) {
     // printCost(ans);
     // printTour(ans); 
 
-    // cout << "Alternate Initial Solutions Constructed" << endl;
-    s.u = ans;
+    // cout << "Alternate Initial Instances Constructed" << endl;
+    return Solution(ans, s);
 }
 
 /*
@@ -111,9 +101,9 @@ void construct_alternate_initial_solution(Solution &s) {
 * It basically means iterating over all n possibilities for the position. Then choose the position that
 * gives the max value of total profit without violating the Tmax condition.
 */
-void construct_initial_solution(Solution &s) {
+Solution construct_initial_solution(Instance &s) {
     // cerr<<"Constructing initial solutions....."<<endl;
-    s.u = vector<vi>(s.m + 1);
+    Solution t(vector<vi>(s.m + 1), s);
     vector<ll> seen(s.r, 0);
     for(ll  i=1; i<s.r; i++) {
         // cout<<"i = "<<i<<endl;
@@ -124,7 +114,7 @@ void construct_initial_solution(Solution &s) {
 
             ll  zero_count = 0; // Number of travellers with no path assigned
             for(ll  i = 0; i < s.m; i++) {
-                if(sz(s.u[i])==0){
+                if(sz(t.u[i])==0){
                     zero_count++;
                     // cout << zero_count << " ";
                 }
@@ -133,17 +123,17 @@ void construct_initial_solution(Solution &s) {
             // cout<<"check 1 "<<endl;
 
             //what does this mean?, may not need for this problem, check introduced for mDmSOP
-            if((sz(s.u[j]) != 0 && zero_count >= s.r) || zero_count > s.r) {
+            if((sz(t.u[j]) != 0 && zero_count >= s.r) || zero_count > s.r) {
                 // cout<<i<<" "<<j<<endl;
                 continue;
             }
             // cout<<"check 2: " << sz(u[j]) <<endl;
 
-            for(ll  pos = 0; pos <= sz(s.u[j]); pos++) {
+            for(ll  pos = 0; pos <= sz(t.u[j]); pos++) {
                 // cout<<"pos = "<<pos<<endl;
-                vector<vector<ll>> u1 = s.u;
+                vector<vector<ll>> u1 = t.u;
                 u1[j].insert(u1[j].begin()+pos, i);
-                ld contest_mn_val = objective_function_algorithm_1(u1, s.u, s, s.profit[i]);
+                ld contest_mn_val = objective_function_algorithm_1(u1, t.u, s, s.profit[i]);
                 
                 // cout<<contest_mn_val<<" "<<mn_val<<" "<<L(u1)<<endl;
     
@@ -156,37 +146,38 @@ void construct_initial_solution(Solution &s) {
         }
         if(id2 != -1) {
             seen[i]=1;
-            s.u[id1].insert(s.u[id1].begin()+id2, i);
+            t.u[id1].insert(t.u[id1].begin()+id2, i);
         }
     }
 
     for(ll  i = 0; i < s.r; i++) {
         if(!seen[i])
-            s.u[s.m].pb(i);
+            t.u[s.m].pb(i);
     }
     // cerr<<"Initial solutions constructed"<<endl;
     // printProfit(s);
     // printCost(s);
     // printTour(s);
+    return t;
 }
 
-void improve_initial_solution(Solution &s) {
+void improve_initial_solution(Instance &s, Solution &t) {
     // cerr<<"Improving initial solutions....."<<endl;
     vector<ll> seen(s.r, 0);
     for(ll  i = 0; i < s.m; i++)
-        for(ll  cluster: s.u[i])
+        for(ll  cluster: t.u[i])
             seen[cluster] = 1;
-    s.u[s.m].clear();
+    t.u[s.m].clear();
     for(ll  i = 1; i < s.r; i++) {
         if(seen[i])
             continue;
         ll  id1=s.m, id2=-1;
         ld mn_val = INF;
         for(ll  j = 0; j < s.m; j++) {
-            for(ll  pos = 0; pos < sz(s.u[j]); pos++) {
-                vector<vector<ll>> u1 = s.u;
+            for(ll  pos = 0; pos < sz(t.u[j]); pos++) {
+                vector<vector<ll>> u1 = t.u;
                 u1[j].insert(u1[j].begin()+pos, i);
-                ld contest_mn_val = objective_function_algorithm_1(u1, s.u, s, s.profit[i]);
+                ld contest_mn_val = objective_function_algorithm_1(u1, t.u, s, s.profit[i]);
                 if(tourInvalid(u1, s)) continue; //CAN COMMENT THIS LINE AND CHECK HOW THE ALGORITHM WORKS
                 //CHECK THIS PART...............................................................................................................................................
                 if(contest_mn_val < mn_val) {
@@ -194,9 +185,9 @@ void improve_initial_solution(Solution &s) {
                     id1 = j, id2 = pos;
                 }
             }
-            vector<vector<ll>> u1 = s.u;
+            vector<vector<ll>> u1 = t.u;
             u1[j].pb(i);
-            ld contest_mn_val = objective_function_algorithm_1(u1, s.u, s, s.profit[i]);
+            ld contest_mn_val = objective_function_algorithm_1(u1, t.u, s, s.profit[i]);
             if(tourInvalid(u1, s)) continue; //CAN COMMENT THIS LINE AND CHECK HOW THE ALGORITHM WORKS
             //CHECK THIS PART...............................................................................................................................................
             if(contest_mn_val < mn_val) {
@@ -207,21 +198,19 @@ void improve_initial_solution(Solution &s) {
         if(id2 != -1) {
             seen[i]=1;
             if(id2 == INF) {
-                s.u[id1].pb(i);
+                t.u[id1].pb(i);
             } else {
-                s.u[id1].insert(s.u[id1].begin()+id2, i);
+                t.u[id1].insert(t.u[id1].begin()+id2, i);
             }
         }
 
     }
     for(ll  i = 1; i < s.r; i++) {
         if(!seen[i])
-            s.u[s.m].pb(i);
+            t.u[s.m].pb(i);
     }
     // cerr<<"Initial solutions Improved"<<endl;
     // printProfit(s);
     // printCost(s);
     // printTour(s);
 }
-
-#endif

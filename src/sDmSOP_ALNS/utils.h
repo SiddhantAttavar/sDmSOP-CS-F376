@@ -1,5 +1,4 @@
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include <bits/stdc++.h>
 #include "constants.h"
@@ -56,5 +55,3 @@ inline int priority_select(const vector<double> &weights) {
     }
     return sz(weights) - 1;
 }
-
-#endif
