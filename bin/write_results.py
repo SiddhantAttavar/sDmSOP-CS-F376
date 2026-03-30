@@ -2,6 +2,7 @@
 import re
 import csv
 import sys
+import shutil
 from pathlib import Path
 from glob import glob
 
@@ -16,6 +17,8 @@ def parse_run_instance_file(file_path):
 	with open(file_path, 'r') as f:
 		lines = [line.strip() for line in f if line.strip()]
 
+	if len(lines) < 5 or not lines[4].isnumeric():
+		return 0;
 	return int(lines[4])
 
 def get_csv_path(file_path):
@@ -110,6 +113,16 @@ def update_csv(file, profit, csv_data):
 		# Update to max
 		row[alns_col] = str(profit)
 		row[gap_col] = str((profit - stop_val) / stop_val)
+		
+		# Copy file to results/instances if profit > alns_val
+		results_instances_dir = Path("results/instances")
+		results_instances_dir.mkdir(parents=True, exist_ok=True)
+		
+		source_file = Path(file)
+		dest_file = results_instances_dir / source_file.name
+		shutil.copy2(source_file, dest_file)
+		# print(f"Copied {source_file} to {dest_file}")
+		
 		return
 
 	# If the instance is missing, raise error
@@ -147,11 +160,12 @@ def save_csv(data):
 		writer.writerows(rows)
 
 def main():
-	instance_files = sys.argv[1:]
-	if not instance_files:
-		instance_files = list(glob('instance_results/*.txt'))
-
+	instance_files = list(glob('instance_results/*.txt'))
 	csv_files = list(glob('results/*/*.csv'))
+	if len(sys.argv) > 1:
+		instance_files = sys.argv[1:]
+		csv_files = list(glob(f'results/*/*.csv'))
+
 	csv_data = load_csv_files(csv_files)
 
 	for file_path in instance_files:

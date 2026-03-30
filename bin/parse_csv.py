@@ -12,12 +12,13 @@ Instances,STOP_T40,ALNS_T40,GAP_T40,
           STOP_T80,ALNS_T80,GAP_T80
 """
 
-if len(sys.argv) != 3:
-    print("Usage: python3 parse_csv.py <num_veh> <csv_file>")
+if len(sys.argv) != 4:
+    print("Usage: python3 parse_csv.py <num_veh> <csv_file> <workflow_type>")
     sys.exit(1)
 
 veh = sys.argv[1]
 csv_file = sys.argv[2]
+workflow_type = sys.argv[3]
 p_value = 'p1' if 'p1' in csv_file else 'p2'
 
 negatives = []   # store (instance, T) pairs
@@ -38,9 +39,11 @@ with open(csv_file, newline='') as f:
             except ValueError:
                 continue  # skip if missing or invalid
 
-            if gap_val < 0:
+            if workflow_type == 'gap':
+                if gap_val < 0:
+                    negatives.append((instance, T, gap_val))
+            else:
                 negatives.append((instance, T, gap_val))
-            # negatives.append((instance, T, gap_val))
 
 # Print results
 for inst, T, gap_val in negatives:

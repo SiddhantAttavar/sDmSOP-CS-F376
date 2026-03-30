@@ -30,7 +30,7 @@ void printProfit(Solution &t, Instance &s) {
 /*
 * Print list of cities (in order) visited by each salesman
 */
-void printTour(Solution &t, Instance &s) {
+void printTour(Solution &t) {
     // cerr<<"Printing Tour"<<endl;
     cout<<"Set of visited vertices is: "<<endl;
     for(ll  i = 0; i < sz(t.u)-1; i++) {
@@ -45,6 +45,27 @@ void printTour(Solution &t, Instance &s) {
     for(ll  i: t.u[sz(t.u)-1])
         cout<<i<<" ";
     cout<<endl;
+    cerr<<"Printing Tour done"<<endl;
+}
+
+/*
+* Print list of cities (in order) visited by each salesman
+*/
+void printTourFile(Solution &t, ofstream& outfile) {
+    // cerr<<"Printing Tour"<<endl;
+    outfile<<"Set of visited vertices is: "<<endl;
+    for(ll  i = 0; i < sz(t.u)-1; i++) {
+        outfile<<"sequence of sets for salesman "<<i+1<<": { ";
+        // vector<ll> salesmanSet = ;
+        for(ll  set: t.u[i]) {
+            outfile<<set<<" ";
+        }
+        outfile<<"}"<<endl;
+    }
+    outfile<<"sets not visisted by any salesmen are: ";
+    for(ll  i: t.u[sz(t.u)-1])
+        outfile<<i<<" ";
+    outfile<<endl;
     cerr<<"Printing Tour done"<<endl;
 }
 

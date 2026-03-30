@@ -76,7 +76,8 @@ Solution mtsp_alns(Instance &s, ll  stoppingTime) {
     cout<<"Final initial solution is: "<<endl;
     printProfit(t, s);
     printCost(t, s);
-    printTour(t, s);
+    printTour(t);
+    printTour(t);
     cout << "Max Cost (Tmax): " << s.Tmax << endl;
 
     Solution t_best = t;
@@ -194,7 +195,8 @@ signed main(int argc, char *argv[]) {
     cout<<"Printing best solutions: "<<endl;
     printProfit(t, s);
     printCost(t, s);
-    printTour(t, s);
+    printTour(t);
+    printTourFile(t, outfile);
     // cout<< "Done!" << endl;
 }
 

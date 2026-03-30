@@ -8,6 +8,7 @@ trace*.txt
 
 # Data
 stop_instances
+results/instances
 
 # Prerequisites
 *.d

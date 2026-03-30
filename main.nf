@@ -3,6 +3,7 @@
 params.veh_types = ['stop_1veh', 'stop_2veh', 'stop_3veh']
 params.solution = 'sDmSOP_ALNS_STOP.out'
 params.results_dir = "${projectDir}/results"
+params.workflow_type = 'gap'
 
 process process_csv {
     input:
@@ -13,7 +14,7 @@ process process_csv {
 
     script:
     """
-    parse_csv.py ${veh} ${csv_file} > ${veh}_${csv_file.simpleName}.txt
+    parse_csv.py ${veh} ${csv_file} > ${veh}_${csv_file.simpleName}.txt ${params.workflow_type}
     """
 }
 
@@ -53,7 +54,7 @@ process write_results {
 
     script:
     """
-    write_results.py ${params.results_dir} ${results}
+    write_results.py ${results}
     """
 }
 
