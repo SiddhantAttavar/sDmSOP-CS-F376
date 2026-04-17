@@ -13,3 +13,5 @@ Solution::Solution(vector<vi> _u, Instance &s) :
         rdp[k] = 0;
     }
 }
+
+Solution::Solution() {}

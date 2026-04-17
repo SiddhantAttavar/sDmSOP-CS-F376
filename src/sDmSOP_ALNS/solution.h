@@ -11,4 +11,5 @@ struct Solution {
     vi g, h, dp, rdp;
 
     Solution(vector<vi> _u, Instance &s);
+    Solution();
 };

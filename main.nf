@@ -54,7 +54,7 @@ process write_results {
 
     script:
     """
-    write_results.py ${results}
+    write_results.py
     """
 }
 

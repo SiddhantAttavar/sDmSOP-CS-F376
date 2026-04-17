@@ -41,7 +41,7 @@ void printTour(Solution &t) {
         }
         cout<<"}"<<endl;
     }
-    cout<<"sets not visisted by any salesmen are: ";
+    cout<<"sets not visited by any salesmen are: ";
     for(ll  i: t.u[sz(t.u)-1])
         cout<<i<<" ";
     cout<<endl;
@@ -62,7 +62,7 @@ void printTourFile(Solution &t, ofstream& outfile) {
         }
         outfile<<"}"<<endl;
     }
-    outfile<<"sets not visisted by any salesmen are: ";
+    outfile<<"sets not vissted by any salesmen are: ";
     for(ll  i: t.u[sz(t.u)-1])
         outfile<<i<<" ";
     outfile<<endl;

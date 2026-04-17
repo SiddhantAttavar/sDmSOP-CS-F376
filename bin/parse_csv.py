@@ -22,6 +22,8 @@ workflow_type = sys.argv[3]
 p_value = 'p1' if 'p1' in csv_file else 'p2'
 
 negatives = []   # store (instance, T) pairs
+neg = 0
+pos = 0
 
 with open(csv_file, newline='') as f:
     reader = csv.DictReader(f)
@@ -39,6 +41,11 @@ with open(csv_file, newline='') as f:
             except ValueError:
                 continue  # skip if missing or invalid
 
+            if gap_val < 0:
+                neg += 1
+            elif gap_val > 0:
+                pos += 1
+
             if workflow_type == 'gap':
                 if gap_val < 0:
                     negatives.append((instance, T, gap_val))
@@ -52,3 +59,5 @@ for inst, T, gap_val in negatives:
         file_name += '_RND'
     file_name += f'_T{T}_{p_value}.sop'
     print(file_name)
+
+print(neg, pos)

@@ -45,7 +45,7 @@ void update_weights(vector<double> &weights, int op, double reward, ll time, dou
          return;
      }
 
-     reward *= avg_time / time;
+     reward *= sqrt(avg_time / time);
      avg_time = (1 - EMA_ALPHA) * avg_time + EMA_ALPHA * time;
      weights[op] = min(MAX_WEIGHT, max(MIN_WEIGHT, weights[op] * reward));
      double sum = accumulate(weights.begin(), weights.end(), 0.0);
@@ -54,10 +54,20 @@ void update_weights(vector<double> &weights, int op, double reward, ll time, dou
      }
 }
 
+/**
+ * Reheat instance solution to encourage more exploratory behvaiou
+ * Called if the current solution is stale (no recent improvements)
+ */
+void reheat_instance(Instance &s, ll p_current) {
+    s.temperature = -MU * p_current / log(0.5);
+    s.removal_weights = BASE_REMOVAL_WEIGHTS;
+    s.insertion_weights = BASE_INSERTION_WEIGHTS;
+}
+
 /*
 * MTSP ALNS Alogorithm
 */
-Solution mtsp_alns(Instance &s, ll  stoppingTime) {
+Solution mtsp_alns(Instance s, ll  stoppingTime, int thread = -1) {
     Solution t = construct_alternate_initial_solution(s);
     // construct_initial_solution(s);
     // if(tourInvalid(u)) {
@@ -98,7 +108,7 @@ Solution mtsp_alns(Instance &s, ll  stoppingTime) {
         double adaptive_reward = p_new / (1.0 * p_current);
         if(!tourInvalid(t11.u, s) && no_salesmen_empty(t11.u) && t.u != t11.u && accept(p_new, p_current, s.temperature)) {
             if (p_new > p_max) {
-                cout << "Improved profit from " << p_max << " to " << p_new << endl;
+                cout << "Thread " << thread << ": Improved profit from " << p_max << " to " << p_new << endl;
                 p_max = p_new;
                 t_best = t11;
                 effective_iterations++;
@@ -106,7 +116,7 @@ Solution mtsp_alns(Instance &s, ll  stoppingTime) {
                 adaptive_reward *= REWARD_BEST;
             }
             else {
-                consecutive_bad_iterations++;
+                // consecutive_bad_iterations++;
             }
             t = t11;
             p_current = p_new;
@@ -115,20 +125,38 @@ Solution mtsp_alns(Instance &s, ll  stoppingTime) {
             consecutive_bad_iterations++;
         }
 
+        if (consecutive_bad_iterations > MAX_BAD_ITERATIONS) {
+            cout << "Thread " << thread << ": Reheating instance" << endl;
+            t = t_best;
+            p_current = P(t.u, s.profit);
+            reheat_instance(s, p_current);
+            consecutive_bad_iterations = 0;
+        }
+
         update_weights(s.removal_weights, removal_operator, adaptive_reward, removal_time, s.avg_removal_time);
         update_weights(s.insertion_weights, insertion_operator, adaptive_reward, insertion_time, s.avg_insertion_time);
 
         s.temperature *= ALPHA;
         iterations++;
-        if (iterations % 1000 == 0) {
+        if (iterations % PRINT_ITERATIONS == 0) {
+            /* cout << "Removal weights: ";
+            for (double i : s.removal_weights) {
+                cout << std::fixed << setprecision(4) << i << ' ';
+            }
+            cout << endl;
+            cout << "Insertion weights: ";
+            for (double i : s.insertion_weights) {
+                cout << std::fixed << setprecision(4) << i << ' ';
+            }
+            cout << endl; */
             // cout << removal_operator << ' ' << s.avg_removal_time / 1e6 << ' ' << removal_time / 1e6 << endl;
             // cout << insertion_operator << ' ' << s.avg_insertion_time / 1e6 << ' ' << insertion_time / 1e6 << endl;
-            cout << "Effective iterations: " << effective_iterations << '/' << iterations << endl;
+            cout << "Thread " << thread << ": Effective iterations: " << effective_iterations << '/' << iterations << endl;
             cout.flush();
         }
         auto end = std::chrono::high_resolution_clock::now();
         auto diff = chrono::duration_cast<chrono::nanoseconds>(end - start);
-        if((diff > std::chrono::nanoseconds(stoppingTime*((ll)1e9))) || p_current == t.total_profit || (consecutive_bad_iterations > MAX_BAD_ITERATIONS) || (iterations > MAX_ITERATIONS))
+        if((diff > std::chrono::nanoseconds(stoppingTime*((ll)1e9))) || p_current == t.total_profit || (iterations > MAX_ITERATIONS))
             break;
     }
 
@@ -182,7 +210,20 @@ signed main(int argc, char *argv[]) {
     calculate_proximity(s);
     calculate_relatedness(s);
     calculate_extended_cost(s);
-    Solution t = mtsp_alns(s, MAX_TIME);
+
+    future<Solution> solutions[NUM_THREADS];
+    for (int i = 0; i < NUM_THREADS; i++) {
+        solutions[i] = async(mtsp_alns, s, MAX_TIME, i);
+    }
+
+    Solution t;
+    for (int i = 0; i < NUM_THREADS; i++) {
+        Solution t1 = solutions[i].get();
+        if (P(t1.u, s.profit) > P(t.u, s.profit)) {
+            t = t1;
+        }
+    }
+
     if(sz(t.u) == 0) {
         outfile<<0<<endl<<t.total_profit<<endl<<"No solutions possible for the given problem"<<endl;
         return 0;
