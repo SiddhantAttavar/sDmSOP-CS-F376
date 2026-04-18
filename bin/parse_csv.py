@@ -12,13 +12,14 @@ Instances,STOP_T40,ALNS_T40,GAP_T40,
           STOP_T80,ALNS_T80,GAP_T80
 """
 
-if len(sys.argv) != 4:
-    print("Usage: python3 parse_csv.py <num_veh> <csv_file> <workflow_type>")
+if len(sys.argv) != 4 and len(sys.argv) != 5:
+    print("Usage: python3 parse_csv.py <num_veh> <csv_file> <workflow_type> <verbose>")
     sys.exit(1)
 
 veh = sys.argv[1]
 csv_file = sys.argv[2]
 workflow_type = sys.argv[3]
+verbose = len(sys.argv) == 5
 p_value = 'p1' if 'p1' in csv_file else 'p2'
 
 negatives = []   # store (instance, T) pairs
@@ -60,4 +61,5 @@ for inst, T, gap_val in negatives:
     file_name += f'_T{T}_{p_value}.sop'
     print(file_name)
 
-print(neg, pos)
+if verbose:
+    print(neg, pos)

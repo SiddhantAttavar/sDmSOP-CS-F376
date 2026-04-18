@@ -95,11 +95,11 @@ Solution mtsp_alns(Instance s, ll  stoppingTime, int thread = -1) {
     ll p_max = p_current;
     s.temperature = -MU * p_current / log(0.5);
 
-    auto start = std::chrono::high_resolution_clock::now();
     int effective_iterations = 0;
     int consecutive_bad_iterations = 0;
     int iterations = 0;
 
+    auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         // cout << "Here" << endl;
         auto [t1, removal_operator, removal_time] = remove(s, t);
@@ -116,7 +116,7 @@ Solution mtsp_alns(Instance s, ll  stoppingTime, int thread = -1) {
                 adaptive_reward *= REWARD_BEST;
             }
             else {
-                // consecutive_bad_iterations++;
+                consecutive_bad_iterations++;
             }
             t = t11;
             p_current = p_new;
@@ -125,16 +125,16 @@ Solution mtsp_alns(Instance s, ll  stoppingTime, int thread = -1) {
             consecutive_bad_iterations++;
         }
 
-        if (consecutive_bad_iterations > MAX_BAD_ITERATIONS) {
-            cout << "Thread " << thread << ": Reheating instance" << endl;
-            t = t_best;
-            p_current = P(t.u, s.profit);
-            reheat_instance(s, p_current);
-            consecutive_bad_iterations = 0;
-        }
-
         update_weights(s.removal_weights, removal_operator, adaptive_reward, removal_time, s.avg_removal_time);
         update_weights(s.insertion_weights, insertion_operator, adaptive_reward, insertion_time, s.avg_insertion_time);
+
+        // if (consecutive_bad_iterations > MAX_BAD_ITERATIONS) {
+        //     cout << "Thread " << thread << ": Reheating instance" << endl;
+        //     t = t_best;
+        //     p_current = P(t.u, s.profit);
+        //     reheat_instance(s, p_current);
+        //     consecutive_bad_iterations = 0;
+        // }
 
         s.temperature *= ALPHA;
         iterations++;
@@ -171,9 +171,6 @@ Solution mtsp_alns(Instance s, ll  stoppingTime, int thread = -1) {
     }
     cout << endl;
 
-    auto end = std::chrono::high_resolution_clock::now();
-    outfile<<std::fixed<<chrono::duration_cast<chrono::nanoseconds>(end - start).count()/(ld)(1e9)<<endl;
-    outfile<<effective_iterations<<endl;
     cout << "Iterations: " << iterations << endl;
     cerr<<"Algorithm terminated"<<endl;
     return t_best;
@@ -211,18 +208,24 @@ signed main(int argc, char *argv[]) {
     calculate_relatedness(s);
     calculate_extended_cost(s);
 
+    auto start = std::chrono::high_resolution_clock::now();
     future<Solution> solutions[NUM_THREADS];
     for (int i = 0; i < NUM_THREADS; i++) {
         solutions[i] = async(mtsp_alns, s, MAX_TIME, i);
     }
 
-    Solution t;
+    Solution t = construct_alternate_initial_solution(s);
+    ll p_best = -1;
     for (int i = 0; i < NUM_THREADS; i++) {
         Solution t1 = solutions[i].get();
-        if (P(t1.u, s.profit) > P(t.u, s.profit)) {
+        ll p_current = P(t1.u, s.profit);
+        if (p_current > p_best) {
             t = t1;
+            p_best = p_current;
         }
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    outfile<<std::fixed<<chrono::duration_cast<chrono::nanoseconds>(end - start).count()/(ld)(1e9)<<endl;
 
     if(sz(t.u) == 0) {
         outfile<<0<<endl<<t.total_profit<<endl<<"No solutions possible for the given problem"<<endl;

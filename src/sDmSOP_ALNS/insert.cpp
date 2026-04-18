@@ -139,7 +139,7 @@ Solution parallel_insert(Solution t, Instance &s, function<int(vector<vector<pai
         t.u.back().erase(t.u.back().begin() + j);
         modified = p.first;
     }
-    t.u.back() = left;
+    t.u.back().insert(t.u.back().end(), left.begin(), left.end());
     return t;
 }
 
@@ -266,7 +266,7 @@ Solution insert_9(Solution &t, Instance &s) {
 * We can add more neighborhoods structures later, if needed.
 */
 tuple<Solution, int, ll> insert(Instance &s, Solution &t, int l = -1) {
-    // cerr<<"Local search for the configuration....."<<endl;
+    // cerr<<"Local search for the confieuration....."<<endl;
     if (t.u.back().empty()) {
         return {t, -1, 0};
     }

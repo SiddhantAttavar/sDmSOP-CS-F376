@@ -53,20 +53,21 @@ void printTour(Solution &t) {
 */
 void printTourFile(Solution &t, ofstream& outfile) {
     // cerr<<"Printing Tour"<<endl;
-    outfile<<"Set of visited vertices is: "<<endl;
+    // outfile<<"Set of visited vertices is: "<<endl;
     for(ll  i = 0; i < sz(t.u)-1; i++) {
-        outfile<<"sequence of sets for salesman "<<i+1<<": { ";
+        // outfile<<"sequence of sets for salesman "<<i+1<<": { ";
         // vector<ll> salesmanSet = ;
         for(ll  set: t.u[i]) {
             outfile<<set<<" ";
         }
-        outfile<<"}"<<endl;
+        outfile << endl;
+        // outfile<<"}"<<endl;
     }
-    outfile<<"sets not vissted by any salesmen are: ";
+    // outfile<<"sets not visited by any salesmen are: ";
     for(ll  i: t.u[sz(t.u)-1])
         outfile<<i<<" ";
     outfile<<endl;
-    cerr<<"Printing Tour done"<<endl;
+    // cerr<<"Printing Tour done"<<endl;
 }
 
 //correlates an index position to a postion among the multiple set of travellers

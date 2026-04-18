@@ -40,6 +40,9 @@ vector<ii> remove_2(Solution &t, Instance &s) {
     }
 
     sort(cost.begin(), cost.end());
+    if (cost.empty()) {
+        return {};
+    }
     return {rp_select(cost, 5).second};
 }
 
@@ -55,6 +58,9 @@ vector<ii> remove_3(Solution &t, Instance &s) {
     }
 
     sort(cost.begin(), cost.end());
+    if (cost.empty()) {
+        return {};
+    }
     return {rp_select(cost, 10).second};
 }
 
@@ -90,9 +96,15 @@ vector<ii> remove_4(Solution &t, Instance &s) {
     sort(cost.begin(), cost.end(), [](pair<ii, ii> a, pair<ii, ii> b) {
         return a.first.first * b.first.second < b.first.first * a.first.second;
     });
+    if (cost.empty()) {
+        return {};
+    }
     return {rp_select(cost, 4).second};
 }
 
+/**
+ * Related removal
+ */
 vector<ii> remove_5(Solution &t, Instance &s) {
     vector<pair<ll, ii>> l;
     for (int i = 0; i < sz(t.u) - 1; i++) {
@@ -117,7 +129,6 @@ vector<ii> remove_5(Solution &t, Instance &s) {
     if (cost.empty()) {
         return {};
     }
-
     auto [p, q] = rp_select(cost, 10).second;
     return {p, q};
 }
@@ -147,6 +158,10 @@ tuple<Solution, int, ll> remove(Instance &s, Solution &t) {
     Solution z = t;
     int l = priority_select(s.removal_weights);
     while (x > 0) {
+        int k = s.r - sz(z.u[s.m]) - 1;
+        if (k == 0) {
+            break;
+        }
         vector<ii> p;
         switch(l) {
             case 0:

@@ -14,4 +14,4 @@ Solution::Solution(vector<vi> _u, Instance &s) :
     }
 }
 
-Solution::Solution() {}
+Solution::Solution() : u(), g(), h(), dp(), rdp() {}

@@ -42,7 +42,7 @@ inline ll  getRand(ll  l, ll  r){
 template<typename T>
 inline T rp_select(vector<T> &l, int rp) {
     double y = ((double) rand() / (RAND_MAX));
-    return l[(int) (pow(y, rp) * l.size())];
+    return l[(int) (pow(y, rp) * sz(l))];
 }
 
 inline int priority_select(const vector<double> &weights) {

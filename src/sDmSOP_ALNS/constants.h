@@ -3,7 +3,7 @@
 #include <vector>
 #define ll long long
 
-const int NUM_THREADS = 10;
+const int NUM_THREADS = 5;
 const ll inf = 0xFFFFFFFFFFFFFFFL; //very large number
 const ll INF = 1e18;
 const ll MAX_LIMIT_REPEAT = 100;
@@ -18,4 +18,4 @@ const double REMOVAL_CONSTANT = 0.3;
 const double REWARD_BEST = 1.1, MIN_WEIGHT = 0.01, MAX_WEIGHT = 0.5;
 const double EMA_ALPHA = 0.01;
 const std::vector<double> BASE_REMOVAL_WEIGHTS = {0.2, 0.2, 0.2, 0.2, 0.2};
-const std::vector<double> BASE_INSERTION_WEIGHTS = {0.2, 0.2, 0.2, 0.2, 0.2};
+const std::vector<double> BASE_INSERTION_WEIGHTS = {0.11, 0.11, 0.11, 0.11, 0.11, 0.11, 0.11, 0.11, 0.12};
