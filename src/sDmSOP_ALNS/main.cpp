@@ -47,17 +47,18 @@ bool accept(ll p_new, ll p_prev, ld temperature) {
 }
 
 void update_weights(vector<double> &weights, int op, double reward, ll time, double &avg_time) {
-     if (op == -1) {
-         return;
-     }
+    if (op == -1) {
+        return;
+    }
 
-     reward *= sqrt(avg_time / time);
-     avg_time = (1 - EMA_ALPHA) * avg_time + EMA_ALPHA * time;
-     weights[op] = min(MAX_WEIGHT, max(MIN_WEIGHT, weights[op] * reward));
-     double sum = accumulate(weights.begin(), weights.end(), 0.0);
-     for (int i = 0; i < sz(weights); i++) {
-         weights[i] /= sum;
-     }
+    reward *= sqrt(avg_time / time);
+    avg_time = (1 - EMA_ALPHA) * avg_time + EMA_ALPHA * time;
+    weights[op] *= reward;
+    double sum = accumulate(weights.begin(), weights.end(), 0.0);
+    for (int i = 0; i < sz(weights); i++) {
+        weights[i] /= sum;
+        weights[i] = min(MAX_WEIGHT, max(MIN_WEIGHT, weights[i]));
+    }
 }
 
 /**

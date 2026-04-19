@@ -32,6 +32,7 @@ process merge_results {
 }
 
 process run_instances {
+    maxRetries 5
     maxForks 8
     publishDir "instance_results", mode: 'copy'
 
