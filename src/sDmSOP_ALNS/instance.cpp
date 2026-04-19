@@ -80,6 +80,7 @@ Instance input(string file_name) {
             s.cluster[i][v] = true;
         }
     }
+    s.total_profit = accumulate(all(s.profit), 0ll);
 
 	return s;
 }

@@ -3,7 +3,7 @@
 #include <vector>
 #define ll long long
 
-const int NUM_THREADS = 5;
+const int NUM_THREADS = 10;
 const ll inf = 0xFFFFFFFFFFFFFFFL; //very large number
 const ll INF = 1e18;
 const ll MAX_LIMIT_REPEAT = 100;

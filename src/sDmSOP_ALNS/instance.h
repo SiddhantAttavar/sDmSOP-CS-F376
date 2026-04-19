@@ -7,6 +7,7 @@ using namespace std;
 struct Instance {
 	ld temperature;
 	ll  n, m, r, Tmax, T;
+    ll total_profit = 0;
 	vector<vi> cost, cluster;
     vector<vi> cities_in_cluster;
 	vector<vi> extended_cost;

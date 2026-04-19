@@ -11,6 +11,12 @@
 #include "insert.h"
 using namespace std;
 
+struct thread_state {
+    atomic<ll> p_current;
+    atomic<int> update_iter;
+    atomic<bool> alive;
+};
+
 ofstream outfile; 
 
 // http://e-maxx.ru/algo/assignment_hungary#6 - For Hungarian Algorithm
@@ -67,7 +73,11 @@ void reheat_instance(Instance &s, ll p_current) {
 /*
 * MTSP ALNS Alogorithm
 */
-Solution mtsp_alns(Instance s, ll  stoppingTime, int thread = -1) {
+Solution mtsp_alns(Instance s, ll  stoppingTime, vector<thread_state> &thread_states, int thread = -1) {
+    thread_states[thread].p_current = -1;
+    thread_states[thread].update_iter = -1;
+    thread_states[thread].alive = -1;
+
     Solution t = construct_alternate_initial_solution(s);
     // construct_initial_solution(s);
     // if(tourInvalid(u)) {
@@ -139,24 +149,43 @@ Solution mtsp_alns(Instance s, ll  stoppingTime, int thread = -1) {
         s.temperature *= ALPHA;
         iterations++;
         if (iterations % PRINT_ITERATIONS == 0) {
-            /* cout << "Removal weights: ";
-            for (double i : s.removal_weights) {
-                cout << std::fixed << setprecision(4) << i << ' ';
-            }
-            cout << endl;
-            cout << "Insertion weights: ";
-            for (double i : s.insertion_weights) {
-                cout << std::fixed << setprecision(4) << i << ' ';
-            }
-            cout << endl; */
-            // cout << removal_operator << ' ' << s.avg_removal_time / 1e6 << ' ' << removal_time / 1e6 << endl;
-            // cout << insertion_operator << ' ' << s.avg_insertion_time / 1e6 << ' ' << insertion_time / 1e6 << endl;
             cout << "Thread " << thread << ": Effective iterations: " << effective_iterations << '/' << iterations << endl;
             cout.flush();
         }
+
+        if (iterations % (MAX_ITERATIONS / NUM_THREADS) == 0) {
+            // Kill bad performing threads
+            thread_states[thread].p_current = p_current;
+            thread_states[thread].update_iter = iterations;
+            bool flag = true;
+            for (int i = 0; i < NUM_THREADS; i++) {
+                if (thread_states[i].alive and thread_states[i].update_iter < iterations) {
+                    flag = false;
+                    break;
+                }
+            }
+            if (flag) {
+                int j = -1, c = 0;
+                ll p_worst = inf;
+                for (int i = 0; i < NUM_THREADS; i++) {
+                    if (thread_states[i].alive) {
+                        c++;
+                        if (j == -1 or thread_states[i].p_current < p_worst) {
+                            j = i;
+                            p_worst = thread_states[j].p_current;
+                        }
+                    }
+                }
+                if (c > 1) {
+                    cout << "Killed thread " << j << endl;
+                    thread_states[j].alive = false;
+                }
+            }
+        }
+
         auto end = std::chrono::high_resolution_clock::now();
         auto diff = chrono::duration_cast<chrono::nanoseconds>(end - start);
-        if((diff > std::chrono::nanoseconds(stoppingTime*((ll)1e9))) || p_current == t.total_profit || (iterations > MAX_ITERATIONS))
+        if((diff > std::chrono::nanoseconds(stoppingTime*((ll)1e9))) || p_current == s.total_profit || (iterations > MAX_ITERATIONS) || !thread_states[thread].alive)
             break;
     }
 
@@ -209,12 +238,13 @@ signed main(int argc, char *argv[]) {
     calculate_extended_cost(s);
 
     auto start = std::chrono::high_resolution_clock::now();
-    future<Solution> solutions[NUM_THREADS];
+    vector<future<Solution>> solutions(NUM_THREADS);
+    vector<thread_state> thread_states(NUM_THREADS);
     for (int i = 0; i < NUM_THREADS; i++) {
-        solutions[i] = async(mtsp_alns, s, MAX_TIME, i);
+        solutions[i] = async(mtsp_alns, s, MAX_TIME, std::ref(thread_states), i);
     }
 
-    Solution t = construct_alternate_initial_solution(s);
+    Solution t;
     ll p_best = -1;
     for (int i = 0; i < NUM_THREADS; i++) {
         Solution t1 = solutions[i].get();
@@ -228,12 +258,12 @@ signed main(int argc, char *argv[]) {
     outfile<<std::fixed<<chrono::duration_cast<chrono::nanoseconds>(end - start).count()/(ld)(1e9)<<endl;
 
     if(sz(t.u) == 0) {
-        outfile<<0<<endl<<t.total_profit<<endl<<"No solutions possible for the given problem"<<endl;
+        outfile<<0<<endl<<s.total_profit<<endl<<"No solutions possible for the given problem"<<endl;
         return 0;
     }
 
     outfile << P(t.u, s.profit) << endl; 
-    outfile << t.total_profit << endl; 
+    outfile << s.total_profit << endl; 
     outfile << "Valid solution exists for the given problem" << endl;
 
     cout<<"Printing best solutions: "<<endl;
@@ -246,4 +276,4 @@ signed main(int argc, char *argv[]) {
 
 // berlin optilmal -> 4040
 // eil optimal -> 174
-// formula -> Tmax = opt*w*m
+// formula -> Tmax = opt*w*mint

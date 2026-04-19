@@ -17,7 +17,7 @@ vector<ii> remove_1(Solution &t, Instance &s) {
  * Worst cost removal
  */
 vector<ii> remove_2(Solution &t, Instance &s) {
-    preprocess_costs(t, s, -1);
+    preprocess_costs(t, s);
     vector<pair<ll, ii>> cost;
     for (int i = 0; i < sz(t.u) - 1; i++) {
         ll base_cost = 0;
@@ -68,7 +68,7 @@ vector<ii> remove_3(Solution &t, Instance &s) {
  * Worst profit over cost removal
  */
 vector<ii> remove_4(Solution &t, Instance &s) {
-    preprocess_costs(t, s, -1);
+    preprocess_costs(t, s);
     vector<pair<ii, ii>> cost;
     for (int i = 0; i < sz(t.u) - 1; i++) {
         ll base_cost = 0;
@@ -188,6 +188,7 @@ tuple<Solution, int, ll> remove(Instance &s, Solution &t) {
             int v = z.u[i][j];
             z.u.back().push_back(v);
             z.u[i].erase(z.u[i].begin() + j);
+            z.valid[i] = false;
         }
         x -= max(1ll, sz(p));
     }

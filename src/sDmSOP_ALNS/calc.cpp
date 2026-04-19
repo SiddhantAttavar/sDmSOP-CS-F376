@@ -190,15 +190,17 @@ bool tourInvalid(vector<vi> &u, Instance &s){
     return *max_element(all(tourCosts)) > s.T;
 }
 
-void preprocess_costs(Solution &t, Instance &s, int modified = -1) {
-    if (modified == -1) {
-        for (int i = 0; i < sz(t.u) - 1; i++) {
-            preprocess_costs(t, s, i);
+void preprocess_costs(Solution &t, Instance &s, int i = -1) {
+    if (i == -1) {
+        for (int j = 0; j < sz(t.u) - 1; j++) {
+            if (!t.valid[j]) {
+                preprocess_costs(t, s, j);
+                t.valid[j] = true;
+            }
         }
         return;
     }
 
-    int i = modified;
     for (int j : t.u[i]) {
         t.g[j] = INF;
         t.h[j] = INF;

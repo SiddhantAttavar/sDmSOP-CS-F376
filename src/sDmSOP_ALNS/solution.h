@@ -7,8 +7,8 @@ using namespace std;
 
 struct Solution {
     vector<vi> u;
-    ll total_profit = 0;
     vi g, h, dp, rdp;
+    vector<bool> valid;
 
     Solution(vector<vi> _u, Instance &s);
     Solution();

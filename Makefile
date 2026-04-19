@@ -3,7 +3,7 @@
 
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -O3 -std=c++20
+CXXFLAGS = -O3 -std=c++20 -march=native -flto
 LDFLAGS = 
 
 # Directories

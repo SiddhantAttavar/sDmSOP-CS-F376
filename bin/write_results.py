@@ -17,9 +17,9 @@ def parse_run_instance_file(file_path):
 	with open(file_path, 'r') as f:
 		lines = [line.strip() for line in f if line.strip()]
 
-	if len(lines) < 5 or not lines[4].isnumeric():
+	if len(lines) < 4 or not lines[3].isnumeric():
 		return 0;
-	return int(lines[4])
+	return int(lines[3])
 
 def get_csv_path(file_path):
 	"""

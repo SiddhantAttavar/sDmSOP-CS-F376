@@ -7,13 +7,11 @@
 using namespace std;
 
 void insertion_costs(vector<pair<ll, ii>> &res, Solution &t, Instance &s, int v, int modified = -1) {
-    preprocess_costs(t, s, modified);
+    preprocess_costs(t, s);
     vector<pair<ll, ii>> cost;
-    if (modified != -1) {
-        for (auto [c, p] : res) {
-            if (p.first != modified) {
-                cost.push_back({c, p});
-            }
+    for (auto [c, p] : res) {
+        if (modified != -1 and p.first != modified) {
+            cost.push_back({c, p});
         }
     }
     res = cost;
@@ -59,7 +57,7 @@ void insertion_costs(vector<pair<ll, ii>> &res, Solution &t, Instance &s, int v,
 
 ii find_least_cost_insertion_position(Solution &t, Instance &s, int v) {
     vector<pair<ll, ii>> l;
-    insertion_costs(l, t, s, v, -1);
+    insertion_costs(l, t, s, v);
     if (l.empty()) {
         return {-1, -1};
     }
@@ -78,6 +76,7 @@ Solution predetermined_insert(Solution t, Instance &s, int rp) {
         }
         assert(i < s.r);
         t.u[p.first].insert(t.u[p.first].begin() + p.second, i);
+        t.valid[p.first] = false;
     }
     t.u.back() = v;
     return t;
@@ -113,10 +112,11 @@ Solution insert_3(Solution &t, Instance &s) {
 
 Solution parallel_insert(Solution t, Instance &s, function<int(vector<vector<pair<ll, ii>>>&)> select) {
     vector<ll> left;
+    // vector<vector<pair<ll, ii>>> costs(s.r);
     int modified = -1;
     while (!t.u.back().empty()) {
-        vector<vector<pair<ll, ii>>> costs;
         vector<ll> temp;
+        vector<vector<pair<ll, ii>>> costs;
         for (int i : t.u.back()) {
             vector<pair<ll, ii>> cost;
             insertion_costs(cost, t, s, i, modified);
@@ -137,6 +137,7 @@ Solution parallel_insert(Solution t, Instance &s, function<int(vector<vector<pai
         ii p = min_element(costs[j].begin(), costs[j].end())->second;
         t.u[p.first].insert(t.u[p.first].begin() + p.second, t.u.back()[j]);
         t.u.back().erase(t.u.back().begin() + j);
+        t.valid[p.first] = false;
         modified = p.first;
     }
     t.u.back().insert(t.u.back().end(), left.begin(), left.end());
