@@ -25,6 +25,7 @@ p_value = 'p1' if 'p1' in csv_file else 'p2'
 negatives = []   # store (instance, T) pairs
 neg = 0
 pos = 0
+zero = 0
 
 with open(csv_file, newline='') as f:
     reader = csv.DictReader(f)
@@ -46,6 +47,8 @@ with open(csv_file, newline='') as f:
                 neg += 1
             elif gap_val > 0:
                 pos += 1
+            else:
+                zero += 1
 
             if workflow_type == 'gap':
                 if gap_val < 0:
@@ -62,4 +65,4 @@ for inst, T, gap_val in negatives:
     print(file_name)
 
 if verbose:
-    print(neg, pos)
+    print(f'+{pos},-{neg},={zero}')

@@ -21,6 +21,21 @@ def parse_run_instance_file(file_path):
 		return 0;
 	return int(lines[3])
 
+def parse_run_instance_file2(file_path):
+	"""
+	Parse a single run_instances output file.
+	Returns a dictionary of values to update the CSV.
+	Customize this depending on your output format.
+	"""
+	file_path = Path(file_path)
+
+	with open(file_path, 'r') as f:
+		lines = [line.strip() for line in f if line.strip()]
+
+	if len(lines) < 3:
+		return 0;
+	return float(lines[2])
+
 def get_csv_path(file_path):
 	"""
 	Translate a run_instances output file path into the corresponding CSV file path.
@@ -168,12 +183,17 @@ def main():
 
 	csv_data = load_csv_files(csv_files)
 
+	time = 0
 	for file_path in instance_files:
 		profit = parse_run_instance_file(file_path)
+		time += parse_run_instance_file2(file_path)
 		update_csv(file_path, profit, csv_data)
 
 	for file, data in csv_data.items():
 		save_csv(data)
+	
+	if instance_files:
+		print(f'Avg time: {time/len(instance_files)}')
 
 if __name__ == "__main__":
 	main()
